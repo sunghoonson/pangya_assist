@@ -14,7 +14,9 @@
     "slope_line_half_width": 55,
     "show_cup": true,
     "show_grid": true,
-    "show_wind": true,
+    "show_wind": false,
     "show_slope": false,
-    "toggle_hotkey": "Ctrl+Alt+F8"
+    "capture_exclude_enabled": false,
+    "toggle_hotkey": "Ctrl+Alt+F8",
+    "ui_scale": 1.0
 }

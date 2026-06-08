@@ -1,0 +1,7814 @@
+{
+    "로스": [
+        {
+            "hole": "1홀",
+            "cup": "LS011",
+            "distance": "360",
+            "left": "0.3",
+            "right": "-0.4",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "1홀",
+            "cup": "LS012",
+            "distance": "361",
+            "left": "0.1",
+            "right": "-0.1",
+            "note": ""
+        },
+        {
+            "hole": "1홀",
+            "cup": "LS013",
+            "distance": "369",
+            "left": "0.1",
+            "right": "-0.1",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "LS021",
+            "distance": "229.52",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "2홀",
+            "cup": "LS022",
+            "distance": "234.19",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "LS023",
+            "distance": "256.34",
+            "left": "0.05",
+            "right": "-0.05",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "LS031",
+            "distance": "493",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "3홀",
+            "cup": "LS032",
+            "distance": "503",
+            "left": "-0.3",
+            "right": "0.3",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "LS033",
+            "distance": "514",
+            "left": "x",
+            "right": "0.1",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "LS041",
+            "distance": "403",
+            "left": "-0.2",
+            "right": "0.2",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "4홀",
+            "cup": "LS042",
+            "distance": "404",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "LS043",
+            "distance": "411",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "LS051",
+            "distance": "324",
+            "left": "-0.3",
+            "right": "0.15",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "5홀",
+            "cup": "LS052",
+            "distance": "333",
+            "left": "",
+            "right": "0.3",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "LS053",
+            "distance": "339",
+            "left": "-0.1",
+            "right": "0.1",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "LS061",
+            "distance": "554",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "6홀",
+            "cup": "LS062",
+            "distance": "562",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "LS063",
+            "distance": "572",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "LS071",
+            "distance": "385",
+            "left": "0.25",
+            "right": "-0.2",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "7홀",
+            "cup": "LS072",
+            "distance": "390",
+            "left": "-0.3",
+            "right": "0.35",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "LS073",
+            "distance": "397",
+            "left": "0.2",
+            "right": "0.1",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "LS081",
+            "distance": "302.33",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "8홀",
+            "cup": "LS082",
+            "distance": "306.59",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "LS083",
+            "distance": "314.39",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "LS091",
+            "distance": "388",
+            "left": "0.4",
+            "right": "-0.4",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "9홀",
+            "cup": "LS092",
+            "distance": "398",
+            "left": "0.3",
+            "right": "-0.3",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "LS093",
+            "distance": "403",
+            "left": "0.4",
+            "right": "-0.4",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "LS101",
+            "distance": "229.94",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "10홀",
+            "cup": "LS102",
+            "distance": "239.40",
+            "left": "0.4",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "LS103",
+            "distance": "247.29",
+            "left": "0.25",
+            "right": "-0.25",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "LS111",
+            "distance": "349",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "11홀",
+            "cup": "LS112",
+            "distance": "356",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "LS113",
+            "distance": "363",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "LS121",
+            "distance": "487",
+            "left": "0",
+            "right": "0",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "12홀",
+            "cup": "LS122",
+            "distance": "494",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "LS123",
+            "distance": "495",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "LS131",
+            "distance": "286.98",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "13홀",
+            "cup": "LS132",
+            "distance": "293.22",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "LS133",
+            "distance": "300",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "LS141",
+            "distance": "205.79",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "14홀",
+            "cup": "LS142",
+            "distance": "216.75",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "LS143",
+            "distance": "225.27",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "LS151",
+            "distance": "494",
+            "left": "-0.1",
+            "right": "0.1",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "15홀",
+            "cup": "LS152",
+            "distance": "496",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "LS153",
+            "distance": "505",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "LS161",
+            "distance": "372",
+            "left": "0.5",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "16홀",
+            "cup": "LS162",
+            "distance": "374",
+            "left": "-0.1",
+            "right": "0.1",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "LS163",
+            "distance": "389",
+            "left": "0.2",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "LS171",
+            "distance": "256.84",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "17홀",
+            "cup": "LS172",
+            "distance": "259.91",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "LS173",
+            "distance": "272.30",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "LS181",
+            "distance": "455",
+            "left": "0",
+            "right": "0",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "18홀",
+            "cup": "LS182",
+            "distance": "456",
+            "left": "-0.2",
+            "right": "0.2",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "LS183",
+            "distance": "467",
+            "left": "0.05",
+            "right": "-0.05",
+            "note": ""
+        }
+    ],
+    "스파": [
+        {
+            "hole": "1홀",
+            "cup": "SP011",
+            "distance": "377",
+            "left": "-0.7",
+            "right": "0.5",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "1홀",
+            "cup": "SP012",
+            "distance": "378",
+            "left": "-0.3",
+            "right": "0.5",
+            "note": ""
+        },
+        {
+            "hole": "1홀",
+            "cup": "SP013",
+            "distance": "381",
+            "left": "-0.8",
+            "right": "0.7",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "SP021",
+            "distance": "231.68",
+            "left": "0",
+            "right": "0",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "2홀",
+            "cup": "SP022",
+            "distance": "236.08",
+            "left": "0",
+            "right": "0.1",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "SP023",
+            "distance": "239.41",
+            "left": "-0.1",
+            "right": "0.1",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "SP031",
+            "distance": "422",
+            "left": "-0.25",
+            "right": "0.2",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "3홀",
+            "cup": "SP032",
+            "distance": "423",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "SP033",
+            "distance": "티샷토마",
+            "left": "워터조심",
+            "right": "굴덩.굴릭",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "SP041",
+            "distance": "344.51",
+            "left": "x",
+            "right": "0.5",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "4홀",
+            "cup": "SP042",
+            "distance": "351.88",
+            "left": "2P순2",
+            "right": "스마스파",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "SP043",
+            "distance": "353.45",
+            "left": "1.8",
+            "right": "-1.85",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "SP051",
+            "distance": "275.00",
+            "left": "0",
+            "right": "0",
+            "note": "3w*1.376"
+        },
+        {
+            "hole": "5홀",
+            "cup": "SP052",
+            "distance": "282.42",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "SP053",
+            "distance": "284.11",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "SP061",
+            "distance": "233.47",
+            "left": "0.6",
+            "right": "-0.6",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "6홀",
+            "cup": "SP062",
+            "distance": "238.91",
+            "left": "1.8",
+            "right": "-1.7",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "SP063",
+            "distance": "239.62",
+            "left": "0.85",
+            "right": "-0.7",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "SP071",
+            "distance": "370",
+            "left": "-0.6",
+            "right": "0.65",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "7홀",
+            "cup": "SP072",
+            "distance": "379",
+            "left": "0.6",
+            "right": "-0.65",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "SP073",
+            "distance": "384",
+            "left": "0.15",
+            "right": "-0.05",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "SP081",
+            "distance": "371.64",
+            "left": "276비걸",
+            "right": "2역1p맥",
+            "note": "1.9상수"
+        },
+        {
+            "hole": "8홀",
+            "cup": "SP082",
+            "distance": "379.19",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "SP083",
+            "distance": "381.35",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "SP091",
+            "distance": "263.86",
+            "left": "-0.45",
+            "right": "0.55",
+            "note": "3w*1.296"
+        },
+        {
+            "hole": "9홀",
+            "cup": "SP092",
+            "distance": "268.14",
+            "left": "-0.1",
+            "right": "0.1",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "SP093",
+            "distance": "269.70",
+            "left": "-0.55",
+            "right": "0.37",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "SP101",
+            "distance": "232.03",
+            "left": "-0.7",
+            "right": "0.85",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "10홀",
+            "cup": "SP102",
+            "distance": "233.84",
+            "left": "-0.45",
+            "right": "0.45",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "SP103",
+            "distance": "굴덩.굴릭",
+            "left": "칸수이동",
+            "right": "확실히!",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "SP111",
+            "distance": "303.43",
+            "left": "0.45",
+            "right": "-0.45",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "11홀",
+            "cup": "SP112",
+            "distance": "310.14",
+            "left": "0.35",
+            "right": "-0.35",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "SP113",
+            "distance": "double토마",
+            "left": "칸수이동",
+            "right": "확실히!",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "SP121",
+            "distance": "395",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "12홀",
+            "cup": "SP122",
+            "distance": "402",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "SP123",
+            "distance": "403",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "SP131",
+            "distance": "385",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "13홀",
+            "cup": "SP132",
+            "distance": "390",
+            "left": "0.7",
+            "right": "-0.65",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "SP133",
+            "distance": "395",
+            "left": "눈컵높이",
+            "right": "-30",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "SP141",
+            "distance": "230.01",
+            "left": "-0.2",
+            "right": "0.25",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "14홀",
+            "cup": "SP142",
+            "distance": "237.76",
+            "left": "-0.1",
+            "right": "0.1",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "SP143",
+            "distance": "241.21",
+            "left": "-0.075",
+            "right": "0.1",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "SP151",
+            "distance": "233.16",
+            "left": "-0.85",
+            "right": "0.9",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "15홀",
+            "cup": "SP152",
+            "distance": "236.88",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "SP153",
+            "distance": "238.65",
+            "left": "-0.55",
+            "right": "0.7",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "SP161",
+            "distance": "349.46",
+            "left": "-0.7",
+            "right": "0.65",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "16홀",
+            "cup": "SP162",
+            "distance": "352.17",
+            "left": "0.3",
+            "right": "-0.25",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "SP163",
+            "distance": "353.94",
+            "left": "-0.55",
+            "right": "0.7",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "SP171",
+            "distance": "317.83",
+            "left": "x",
+            "right": "x",
+            "note": "3w*1.6"
+        },
+        {
+            "hole": "17홀",
+            "cup": "SP172",
+            "distance": "326.45",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "SP173",
+            "distance": "spike 샷",
+            "left": "홀컵높이",
+            "right": "그대로",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "SP181",
+            "distance": "435",
+            "left": "-0.85",
+            "right": "0.8",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "18홀",
+            "cup": "SP182",
+            "distance": "439",
+            "left": "-0.5",
+            "right": "0.45",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "SP183",
+            "distance": "440",
+            "left": "-0.3",
+            "right": "0.25",
+            "note": ""
+        }
+    ],
+    "라군": [
+        {
+            "hole": "1홀",
+            "cup": "BL011",
+            "distance": "416",
+            "left": "0.25",
+            "right": "-0.25",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "1홀",
+            "cup": "BL012",
+            "distance": "417",
+            "left": "-0.1",
+            "right": "0.1",
+            "note": ""
+        },
+        {
+            "hole": "1홀",
+            "cup": "BL013",
+            "distance": "425",
+            "left": "0.55",
+            "right": "-0.55",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "BL021",
+            "distance": "224.42",
+            "left": "-0.4",
+            "right": "0.4",
+            "note": "굴릭&덩크"
+        },
+        {
+            "hole": "2홀",
+            "cup": "BL022",
+            "distance": "227.72",
+            "left": "-0.6",
+            "right": "0.6",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "BL023",
+            "distance": "230.83",
+            "left": "-0.4",
+            "right": "0.4",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "BL031",
+            "distance": "368",
+            "left": "0",
+            "right": "0",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "3홀",
+            "cup": "BL032",
+            "distance": "372",
+            "left": "0.2",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "BL033",
+            "distance": "381",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "BL041",
+            "distance": "369",
+            "left": "-0.7",
+            "right": "0.75",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "4홀",
+            "cup": "BL042",
+            "distance": "371",
+            "left": "-0.8",
+            "right": "0.6",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "BL043",
+            "distance": "375",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "BL051",
+            "distance": "486",
+            "left": "1.1",
+            "right": "-1.05",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "5홀",
+            "cup": "BL052",
+            "distance": "493",
+            "left": "1.1",
+            "right": "-1.05",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "BL053",
+            "distance": "507",
+            "left": "1.1",
+            "right": "-0.85",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "BL061",
+            "distance": "214.57",
+            "left": "x",
+            "right": "x",
+            "note": "굴릭&덩크"
+        },
+        {
+            "hole": "6홀",
+            "cup": "BL062",
+            "distance": "215.62",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "BL063",
+            "distance": "226.18",
+            "left": "0.43",
+            "right": "-0.43",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "BL071",
+            "distance": "485",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "7홀",
+            "cup": "BL072",
+            "distance": "488",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "BL073",
+            "distance": "490",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "BL081",
+            "distance": "416",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "8홀",
+            "cup": "BL082",
+            "distance": "426",
+            "left": "0.1",
+            "right": "-0.05",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "BL083",
+            "distance": "430중뒤",
+            "left": "0.2",
+            "right": "-0.25",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "BL091",
+            "distance": "383좌",
+            "left": "0.1",
+            "right": "-0.15",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "9홀",
+            "cup": "BL092",
+            "distance": "383우",
+            "left": "-0.2",
+            "right": "0.2",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "BL093",
+            "distance": "388우",
+            "left": "0.2",
+            "right": "-0.25",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "BL101",
+            "distance": "282.83",
+            "left": "x",
+            "right": "x",
+            "note": "토마&스파"
+        },
+        {
+            "hole": "10홀",
+            "cup": "BL102",
+            "distance": "289.14",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "BL103",
+            "distance": "291.39",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "BL111",
+            "distance": "356",
+            "left": "0.1",
+            "right": "-0.15",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "11홀",
+            "cup": "BL112",
+            "distance": "357좌",
+            "left": "-0.1",
+            "right": "0.15",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "BL113",
+            "distance": "364중",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "BL121",
+            "distance": "543좌",
+            "left": "0.4",
+            "right": "-0.4",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "12홀",
+            "cup": "BL122",
+            "distance": "544우뒤",
+            "left": "0.4",
+            "right": "-0.4",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "BL123",
+            "distance": "554중뒤",
+            "left": "0.5",
+            "right": "-0.55",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "BL131",
+            "distance": "428",
+            "left": "-0.1",
+            "right": "0.05",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "13홀",
+            "cup": "BL132",
+            "distance": "442우뒤",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "BL133",
+            "distance": "443좌뒤",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "BL141",
+            "distance": "425",
+            "left": "0.1",
+            "right": "-0.1",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "14홀",
+            "cup": "BL142",
+            "distance": "441좌",
+            "left": "0.5",
+            "right": "-0.55",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "BL143",
+            "distance": "441우",
+            "left": "0.3",
+            "right": "-0.3",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "BL151",
+            "distance": "260.73",
+            "left": "x",
+            "right": "x",
+            "note": "토마&스파"
+        },
+        {
+            "hole": "15홀",
+            "cup": "BL152",
+            "distance": "270.14",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "BL153",
+            "distance": "278.51",
+            "left": "x",
+            "right": "0.15",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "BL161",
+            "distance": "219.50",
+            "left": "0.55",
+            "right": "-0.45",
+            "note": "굴릭&덩크"
+        },
+        {
+            "hole": "16홀",
+            "cup": "BL162",
+            "distance": "231.41",
+            "left": "-0.1",
+            "right": "0.1",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "BL163",
+            "distance": "236.44",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "BL171",
+            "distance": "416앞",
+            "left": "0.4",
+            "right": "-0.4",
+            "note": "못사용"
+        },
+        {
+            "hole": "17홀",
+            "cup": "BL172",
+            "distance": "417",
+            "left": "0.3",
+            "right": "-0.35",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "BL173",
+            "distance": "439뒤",
+            "left": "0.6",
+            "right": "-0.6",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "BL181",
+            "distance": "409",
+            "left": "0.6",
+            "right": "-0.7",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "18홀",
+            "cup": "BL182",
+            "distance": "415좌중",
+            "left": "-0.35",
+            "right": "0.3",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "BL183",
+            "distance": "427우뒤",
+            "left": "0",
+            "right": "-0.05",
+            "note": ""
+        }
+    ],
+    "핑크": [
+        {
+            "hole": "1홀",
+            "cup": "PW011",
+            "distance": "338우앞",
+            "left": "0.6",
+            "right": "-0.6",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "1홀",
+            "cup": "PW012",
+            "distance": "352우뒤",
+            "left": "0.15",
+            "right": "-0.1",
+            "note": ""
+        },
+        {
+            "hole": "1홀",
+            "cup": "PW013",
+            "distance": "357뒤",
+            "left": "-0.1",
+            "right": "0.1",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "PW021",
+            "distance": "211.21",
+            "left": "0.6",
+            "right": "-0.65",
+            "note": "굴릭&덩크"
+        },
+        {
+            "hole": "2홀",
+            "cup": "PW022",
+            "distance": "223.29",
+            "left": "0.25",
+            "right": "-0.3",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "PW023",
+            "distance": "231.30",
+            "left": "0.25",
+            "right": "-0.25",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "PW031",
+            "distance": "365우앞",
+            "left": "0",
+            "right": "0",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "3홀",
+            "cup": "PW032",
+            "distance": "373우중",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "PW033",
+            "distance": "378뒤",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "PW041",
+            "distance": "323.50",
+            "left": "x",
+            "right": "x",
+            "note": "1.64 상수"
+        },
+        {
+            "hole": "4홀",
+            "cup": "PW042",
+            "distance": "326.77",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "PW043",
+            "distance": "330.03",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "PW051",
+            "distance": "360앞",
+            "left": "0",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "5홀",
+            "cup": "PW052",
+            "distance": "376",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "PW053",
+            "distance": "377뒤",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "PW061",
+            "distance": "230.46",
+            "left": "0.3",
+            "right": "-0.3",
+            "note": "굴릭&덩크"
+        },
+        {
+            "hole": "6홀",
+            "cup": "PW062",
+            "distance": "238.15",
+            "left": "0.35",
+            "right": "-0.3",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "PW063",
+            "distance": "240.10",
+            "left": "0.25",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "PW071",
+            "distance": "470",
+            "left": "0.1",
+            "right": "-0.1",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "7홀",
+            "cup": "PW072",
+            "distance": "481",
+            "left": "0.1",
+            "right": "-0.1",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "PW073",
+            "distance": "484",
+            "left": "0.2",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "PW081",
+            "distance": "387",
+            "left": "0.6",
+            "right": "-0.75",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "8홀",
+            "cup": "PW082",
+            "distance": "396",
+            "left": "0.6",
+            "right": "-0.7",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "PW083",
+            "distance": "399뒤",
+            "left": "0.5",
+            "right": "-0.5",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "PW091",
+            "distance": "439",
+            "left": "0",
+            "right": "0.1",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "9홀",
+            "cup": "PW092",
+            "distance": "445",
+            "left": "0.05",
+            "right": "-0.05",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "PW093",
+            "distance": "448중뒤",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "PW101",
+            "distance": "379앞",
+            "left": "0.35",
+            "right": "-0.35",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "10홀",
+            "cup": "PW102",
+            "distance": "389중",
+            "left": "0.3",
+            "right": "-0.3",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "PW103",
+            "distance": "395뒤좌",
+            "left": "0.25",
+            "right": "-0.25",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "PW111",
+            "distance": "379중앞",
+            "left": "0.3",
+            "right": "-0.4",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "11홀",
+            "cup": "PW112",
+            "distance": "388",
+            "left": "0.3",
+            "right": "-0.3",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "PW113",
+            "distance": "395",
+            "left": "0.3",
+            "right": "-0.3",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "PW121",
+            "distance": "235.27",
+            "left": "0.3",
+            "right": "-0.3",
+            "note": "굴릭&덩크"
+        },
+        {
+            "hole": "12홀",
+            "cup": "PW122",
+            "distance": "240.98",
+            "left": "0.6",
+            "right": "-0.6",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "PW123",
+            "distance": "244.06",
+            "left": "0.15",
+            "right": "-0.15",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "PW131",
+            "distance": "496",
+            "left": "0",
+            "right": "0",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "13홀",
+            "cup": "PW132",
+            "distance": "504",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "PW133",
+            "distance": "508중뒤",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "PW141",
+            "distance": "404우앞",
+            "left": "0.15",
+            "right": "-0.2",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "14홀",
+            "cup": "PW142",
+            "distance": "412우뒤",
+            "left": "0.15",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "PW143",
+            "distance": "417뒤",
+            "left": "0.15",
+            "right": "-0.15",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "PW151",
+            "distance": "363우앞",
+            "left": "0",
+            "right": "0",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "15홀",
+            "cup": "PW152",
+            "distance": "371우뒤",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "PW153",
+            "distance": "375뒤",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "PW161",
+            "distance": "227.81",
+            "left": "0.3",
+            "right": "-0.1",
+            "note": "굴릭&토마"
+        },
+        {
+            "hole": "16홀",
+            "cup": "PW162",
+            "distance": "236.86좌",
+            "left": "0.3",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "PW163",
+            "distance": "237.14중",
+            "left": "0.1",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "PW171",
+            "distance": "396",
+            "left": "0.65",
+            "right": "-0.55",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "17홀",
+            "cup": "PW172",
+            "distance": "401좌",
+            "left": "1.05",
+            "right": "-0.9",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "PW173",
+            "distance": "401우",
+            "left": "0.55",
+            "right": "-0.45",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "PW181",
+            "distance": "513",
+            "left": "0.2",
+            "right": "-0.2",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "18홀",
+            "cup": "PW182",
+            "distance": "520좌",
+            "left": "0",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "PW183",
+            "distance": "520우",
+            "left": "0.2",
+            "right": "-0.2",
+            "note": ""
+        }
+    ],
+    "화잇": [
+        {
+            "hole": "1홀",
+            "cup": "WZ011",
+            "distance": "396",
+            "left": "-0.2",
+            "right": "0.2",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "1홀",
+            "cup": "WZ012",
+            "distance": "406중",
+            "left": "0",
+            "right": "-0.05",
+            "note": ""
+        },
+        {
+            "hole": "1홀",
+            "cup": "WZ013",
+            "distance": "419",
+            "left": "0.25",
+            "right": "-0.25",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "WZ021",
+            "distance": "167.70",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "2홀",
+            "cup": "WZ022",
+            "distance": "167.89",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "WZ023",
+            "distance": "180.53",
+            "left": "-0.25",
+            "right": "0.25",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "WZ031",
+            "distance": "398",
+            "left": "X",
+            "right": "X",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "3홀",
+            "cup": "WZ032",
+            "distance": "403",
+            "left": "-0.2",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "WZ033",
+            "distance": "410뒤",
+            "left": "-0.15",
+            "right": "0.2",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "WZ041",
+            "distance": "470우앞",
+            "left": "X",
+            "right": "X",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "4홀",
+            "cup": "WZ042",
+            "distance": "473",
+            "left": "X",
+            "right": "0.3",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "WZ043",
+            "distance": "481",
+            "left": "0.35",
+            "right": "-0.4",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "WZ051",
+            "distance": "414좌",
+            "left": "0.3",
+            "right": "-0.3",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "5홀",
+            "cup": "WZ052",
+            "distance": "422우",
+            "left": "0",
+            "right": "-0.1",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "WZ053",
+            "distance": "427뒤",
+            "left": "0.45",
+            "right": "-0.5",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "WZ061",
+            "distance": "497",
+            "left": "0",
+            "right": "0",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "6홀",
+            "cup": "WZ062",
+            "distance": "499좌",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "WZ063",
+            "distance": "503",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "WZ071",
+            "distance": "420우하",
+            "left": "-0.3",
+            "right": "0.2",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "7홀",
+            "cup": "WZ072",
+            "distance": "424좌",
+            "left": "0.15",
+            "right": "-0.15",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "WZ073",
+            "distance": "441뒤",
+            "left": "0.5",
+            "right": "-0.35",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "WZ081",
+            "distance": "398좌",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "8홀",
+            "cup": "WZ082",
+            "distance": "403",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "WZ083",
+            "distance": "415뒤",
+            "left": "0.3",
+            "right": "-0.3",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "WZ091",
+            "distance": "230.61",
+            "left": "0.7",
+            "right": "-0.6",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "9홀",
+            "cup": "WZ092",
+            "distance": "236.72",
+            "left": "0.55",
+            "right": "-0.6",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "WZ093",
+            "distance": "237.32",
+            "left": "0.55",
+            "right": "-0.6",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "WZ101",
+            "distance": "482",
+            "left": "0",
+            "right": "0",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "10홀",
+            "cup": "WZ102",
+            "distance": "488",
+            "left": "X",
+            "right": "X",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "WZ103",
+            "distance": "494",
+            "left": "0.5",
+            "right": "X",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "WZ111",
+            "distance": "383좌",
+            "left": "X",
+            "right": "0.3",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "11홀",
+            "cup": "WZ112",
+            "distance": "392",
+            "left": "0.3",
+            "right": "-0.3",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "WZ113",
+            "distance": "396뒤",
+            "left": "-0.05",
+            "right": "0.1",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "WZ121",
+            "distance": "190.72",
+            "left": "-0.2",
+            "right": "0.1",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "12홀",
+            "cup": "WZ122",
+            "distance": "197.7",
+            "left": "-0.35",
+            "right": "0.15",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "WZ123",
+            "distance": "201.25",
+            "left": "-0.1",
+            "right": "0.1",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "WZ131",
+            "distance": "387좌",
+            "left": "0.15",
+            "right": "-0.15",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "13홀",
+            "cup": "WZ132",
+            "distance": "387중뒤",
+            "left": "0.2",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "WZ133",
+            "distance": "393뒤",
+            "left": "0.25",
+            "right": "-0.05",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "WZ141",
+            "distance": "584",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "14홀",
+            "cup": "WZ142",
+            "distance": "592",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "WZ143",
+            "distance": "600",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "WZ151",
+            "distance": "446",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "15홀",
+            "cup": "WZ152",
+            "distance": "451",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "WZ153",
+            "distance": "465",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "WZ161",
+            "distance": "164.63",
+            "left": "공-1",
+            "right": "공0",
+            "note": "공기1개"
+        },
+        {
+            "hole": "16홀",
+            "cup": "WZ162",
+            "distance": "168.94",
+            "left": "칸수에서",
+            "right": "_0.1",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "WZ163",
+            "distance": "178.25",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "WZ171",
+            "distance": "452",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "17홀",
+            "cup": "WZ172",
+            "distance": "453",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "WZ173",
+            "distance": "466",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "WZ181",
+            "distance": "357",
+            "left": "0.5",
+            "right": "-0.45",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "18홀",
+            "cup": "WZ182",
+            "distance": "366",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "WZ183",
+            "distance": "389",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        }
+    ],
+    "웨위": [
+        {
+            "hole": "1홀",
+            "cup": "WW011",
+            "distance": "369우",
+            "left": "0.25",
+            "right": "-0.2",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "1홀",
+            "cup": "WW012",
+            "distance": "371중",
+            "left": "0.1",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "1홀",
+            "cup": "WW013",
+            "distance": "381중뒤",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "WW021",
+            "distance": "207.44",
+            "left": "-0.15",
+            "right": "0.15",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "2홀",
+            "cup": "WW022",
+            "distance": "211.23",
+            "left": "-0.25",
+            "right": "0.15",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "WW023",
+            "distance": "220.86",
+            "left": "-0.2",
+            "right": "0.2",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "WW031",
+            "distance": "427우중",
+            "left": "0.3",
+            "right": "-0.2",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "3홀",
+            "cup": "WW032",
+            "distance": "431좌중",
+            "left": "0.2",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "WW033",
+            "distance": "433뒤",
+            "left": "0.4",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "WW041",
+            "distance": "496",
+            "left": "-0.1",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "4홀",
+            "cup": "WW042",
+            "distance": "509우중",
+            "left": "-0.4",
+            "right": "0.45",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "WW043",
+            "distance": "510좌중",
+            "left": "0.1",
+            "right": "-0.1",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "WW051",
+            "distance": "415",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "5홀",
+            "cup": "WW052",
+            "distance": "422좌",
+            "left": "x",
+            "right": "0.2",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "WW053",
+            "distance": "429중",
+            "left": "0.3",
+            "right": "-0.3",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "WW061",
+            "distance": "212.44",
+            "left": "-0.2",
+            "right": "0.2",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "6홀",
+            "cup": "WW062",
+            "distance": "215.47",
+            "left": "0.15",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "WW063",
+            "distance": "242.43",
+            "left": "-0.3",
+            "right": "0.3",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "WW071",
+            "distance": "520",
+            "left": "0.9",
+            "right": "-0.8",
+            "note": "공기11.2개"
+        },
+        {
+            "hole": "7홀",
+            "cup": "WW072",
+            "distance": "524",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "WW073",
+            "distance": "526",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "WW081",
+            "distance": "360",
+            "left": "x",
+            "right": "",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "8홀",
+            "cup": "WW082",
+            "distance": "381우중",
+            "left": "0.5",
+            "right": "-0.45",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "WW083",
+            "distance": "390",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "WW091",
+            "distance": "422앞중",
+            "left": "-0.2",
+            "right": "0.1",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "9홀",
+            "cup": "WW092",
+            "distance": "435우중",
+            "left": "0.1",
+            "right": "-0.3",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "WW093",
+            "distance": "447뒤",
+            "left": "0.1",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "WW101",
+            "distance": "361좌하",
+            "left": "0.3",
+            "right": "",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "10홀",
+            "cup": "WW102",
+            "distance": "374우뒤",
+            "left": "0.2",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "WW103",
+            "distance": "379좌뒤",
+            "left": "0",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "WW111",
+            "distance": "319.96",
+            "left": "0.3",
+            "right": "-0.3",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "11홀",
+            "cup": "WW112",
+            "distance": "323.54",
+            "left": "0.1",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "WW113",
+            "distance": "344.95",
+            "left": "0.2",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "WW121",
+            "distance": "382",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "12홀",
+            "cup": "WW122",
+            "distance": "432",
+            "left": "0.25",
+            "right": "-0.25",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "WW123",
+            "distance": "433우",
+            "left": "-0.2",
+            "right": "0.25",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "WW131",
+            "distance": "471",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "13홀",
+            "cup": "WW132",
+            "distance": "482",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "WW133",
+            "distance": "492",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "WW141",
+            "distance": "199.41",
+            "left": "0.15",
+            "right": "-0.1",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "14홀",
+            "cup": "WW142",
+            "distance": "199.55",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "WW143",
+            "distance": "205.69",
+            "left": "0.1",
+            "right": "-0.1",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "WW151",
+            "distance": "452",
+            "left": "-0.5",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "15홀",
+            "cup": "WW152",
+            "distance": "462우중",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "WW153",
+            "distance": "468",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "WW161",
+            "distance": "209.00",
+            "left": "0",
+            "right": "0",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "16홀",
+            "cup": "WW162",
+            "distance": "218.86",
+            "left": "0.3",
+            "right": "-0.3",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "WW163",
+            "distance": "234.53",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "WW171",
+            "distance": "438",
+            "left": "0.5",
+            "right": "-0.5",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "17홀",
+            "cup": "WW172",
+            "distance": "451좌",
+            "left": "-0.3",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "WW173",
+            "distance": "451뒤중",
+            "left": "-0.4",
+            "right": "0.45",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "WW181",
+            "distance": "332",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "18홀",
+            "cup": "WW182",
+            "distance": "341",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "WW183",
+            "distance": "356",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        }
+    ],
+    "샤닝": [
+        {
+            "hole": "1홀",
+            "cup": "SS011",
+            "distance": "401좌",
+            "left": "0.1",
+            "right": "-0.1",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "1홀",
+            "cup": "SS012",
+            "distance": "401우",
+            "left": "0.25",
+            "right": "-0.25",
+            "note": ""
+        },
+        {
+            "hole": "1홀",
+            "cup": "SS013",
+            "distance": "411",
+            "left": "0.05",
+            "right": "-0.05",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "SS021",
+            "distance": "230.51",
+            "left": "0.55",
+            "right": "-0.5",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "2홀",
+            "cup": "SS022",
+            "distance": "239.33",
+            "left": "0.55",
+            "right": "-0.45",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "SS023",
+            "distance": "247.54",
+            "left": "0.15",
+            "right": "-0.15",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "SS031",
+            "distance": "270.77",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "3홀",
+            "cup": "SS032",
+            "distance": "279.27",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "SS033",
+            "distance": "283.93",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "SS041",
+            "distance": "407",
+            "left": "0.7",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "4홀",
+            "cup": "SS042",
+            "distance": "414",
+            "left": "0.7",
+            "right": "-0.65",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "SS043",
+            "distance": "425",
+            "left": "0.4",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "SS051",
+            "distance": "431",
+            "left": "0.15",
+            "right": "-0.2",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "5홀",
+            "cup": "SS052",
+            "distance": "433",
+            "left": "0.2",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "SS053",
+            "distance": "438",
+            "left": "0.3",
+            "right": "-0.25",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "SS061",
+            "distance": "228.11",
+            "left": "0",
+            "right": "0",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "6홀",
+            "cup": "SS062",
+            "distance": "230.72",
+            "left": "0.4",
+            "right": "-0.4",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "SS063",
+            "distance": "237.55",
+            "left": "0.25",
+            "right": "-0.25",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "SS071",
+            "distance": "486앞",
+            "left": "-0.35",
+            "right": "0.35",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "7홀",
+            "cup": "SS072",
+            "distance": "492중",
+            "left": "-0.2",
+            "right": "0.4",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "SS073",
+            "distance": "498",
+            "left": "-0.1",
+            "right": "0.2",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "SS081",
+            "distance": "412",
+            "left": "0.3",
+            "right": "-0.3",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "8홀",
+            "cup": "SS082",
+            "distance": "413좌중",
+            "left": "-0.25",
+            "right": "0.3",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "SS083",
+            "distance": "419뒤중",
+            "left": "0.2",
+            "right": "-0.15",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "SS091",
+            "distance": "273.7",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "9홀",
+            "cup": "SS092",
+            "distance": "283.64좌",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "SS093",
+            "distance": "284.37우",
+            "left": "0.15",
+            "right": "-0.15",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "SS101",
+            "distance": "226.43",
+            "left": "0",
+            "right": "0",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "10홀",
+            "cup": "SS102",
+            "distance": "229.74",
+            "left": "0",
+            "right": "-0.05",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "SS103",
+            "distance": "233.28",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "SS111",
+            "distance": "438",
+            "left": "0.3",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "11홀",
+            "cup": "SS112",
+            "distance": "444",
+            "left": "0.2",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "SS113",
+            "distance": "445",
+            "left": "0.5",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "SS121",
+            "distance": "378",
+            "left": "x",
+            "right": "-0.15",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "12홀",
+            "cup": "SS122",
+            "distance": "387",
+            "left": "0.2",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "SS123",
+            "distance": "391좌중",
+            "left": "0.15",
+            "right": "-0.15",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "SS131",
+            "distance": "473",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "13홀",
+            "cup": "SS132",
+            "distance": "482",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "SS133",
+            "distance": "485",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "SS141",
+            "distance": "414앞",
+            "left": "-0.1",
+            "right": "0.1",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "14홀",
+            "cup": "SS142",
+            "distance": "417",
+            "left": "-0.3",
+            "right": "0.3",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "SS143",
+            "distance": "423뒤중",
+            "left": "-0.2",
+            "right": "0.2",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "SS151",
+            "distance": "354",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "15홀",
+            "cup": "SS152",
+            "distance": "358",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "SS153",
+            "distance": "364",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "SS161",
+            "distance": "241.32",
+            "left": "-0.4",
+            "right": "0.4",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "16홀",
+            "cup": "SS162",
+            "distance": "242.06",
+            "left": "0.1",
+            "right": "-0.3",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "SS163",
+            "distance": "249.14",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "SS171",
+            "distance": "366",
+            "left": "-0.1",
+            "right": "0.15",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "17홀",
+            "cup": "SS172",
+            "distance": "368",
+            "left": "-0.15",
+            "right": "0.25",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "SS173",
+            "distance": "376",
+            "left": "0.3",
+            "right": "-0.3",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "SS181",
+            "distance": "543",
+            "left": "-0.25",
+            "right": "0.3",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "18홀",
+            "cup": "SS182",
+            "distance": "547",
+            "left": "0.4",
+            "right": "-0.4",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "SS183",
+            "distance": "553",
+            "left": "-0.25",
+            "right": "0.3",
+            "note": ""
+        }
+    ],
+    "세퍄": [
+        {
+            "hole": "1홀",
+            "cup": "SW011",
+            "distance": "407",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "1홀",
+            "cup": "SW012",
+            "distance": "415좌",
+            "left": "1.3",
+            "right": "-0.9",
+            "note": ""
+        },
+        {
+            "hole": "1홀",
+            "cup": "SW013",
+            "distance": "415우",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "SW021",
+            "distance": "251.51",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "2홀",
+            "cup": "SW022",
+            "distance": "299.36",
+            "left": "x",
+            "right": "0.7",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "SW023",
+            "distance": "299.24",
+            "left": "0.45",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "SW031",
+            "distance": "414",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "3홀",
+            "cup": "SW032",
+            "distance": "419",
+            "left": "0.7",
+            "right": "-0.65",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "SW033",
+            "distance": "434뒤",
+            "left": "0.45",
+            "right": "-0.35",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "SW041",
+            "distance": "451",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "4홀",
+            "cup": "SW042",
+            "distance": "464",
+            "left": "0.35",
+            "right": "-0.35",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "SW043",
+            "distance": "466",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "SW051",
+            "distance": "473",
+            "left": "-0.25",
+            "right": "0.25",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "5홀",
+            "cup": "SW052",
+            "distance": "479",
+            "left": "-0.3",
+            "right": "0.25",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "SW053",
+            "distance": "485뒤",
+            "left": "0.25",
+            "right": "-0.3",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "SW061",
+            "distance": "415",
+            "left": "-0.2",
+            "right": "0.2",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "6홀",
+            "cup": "SW062",
+            "distance": "429우뒤",
+            "left": "0.2",
+            "right": "-0.25",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "SW063",
+            "distance": "439뒤",
+            "left": "0.25",
+            "right": "-0.3",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "SW071",
+            "distance": "231.21",
+            "left": "0",
+            "right": "0",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "7홀",
+            "cup": "SW072",
+            "distance": "239.91",
+            "left": "0",
+            "right": "-0.1",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "SW073",
+            "distance": "244.67",
+            "left": "-0.4",
+            "right": "0.5",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "SW081",
+            "distance": "410",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "8홀",
+            "cup": "SW082",
+            "distance": "421",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "SW083",
+            "distance": "440",
+            "left": "0.3",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "SW091",
+            "distance": "487",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "9홀",
+            "cup": "SW092",
+            "distance": "492좌",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "SW093",
+            "distance": "499",
+            "left": "x",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "SW101",
+            "distance": "384",
+            "left": "-0.25",
+            "right": "0.1",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "10홀",
+            "cup": "SW102",
+            "distance": "387우",
+            "left": "0",
+            "right": "-0.1",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "SW103",
+            "distance": "398",
+            "left": "0.25",
+            "right": "-0.25",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "SW111",
+            "distance": "584",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "11홀",
+            "cup": "SW112",
+            "distance": "588우",
+            "left": "0.15",
+            "right": "-0.15",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "SW113",
+            "distance": "591좌뒤",
+            "left": "0.2",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "SW121",
+            "distance": "443",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "12홀",
+            "cup": "SW122",
+            "distance": "447",
+            "left": "-0.3",
+            "right": "0.3",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "SW123",
+            "distance": "452",
+            "left": "-0.2",
+            "right": "0.2",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "SW131",
+            "distance": "223.87",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "13홀",
+            "cup": "SW132",
+            "distance": "227.37",
+            "left": "1.4",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "SW133",
+            "distance": "235.72",
+            "left": "0.65",
+            "right": "-0.65",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "SW141",
+            "distance": "354",
+            "left": "0.35",
+            "right": "-0.35",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "14홀",
+            "cup": "SW142",
+            "distance": "372좌중",
+            "left": "-0.2",
+            "right": "0.2",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "SW143",
+            "distance": "384뒤",
+            "left": "-0.45",
+            "right": "0.45",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "SW151",
+            "distance": "413",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "15홀",
+            "cup": "SW152",
+            "distance": "417",
+            "left": "-0.5",
+            "right": "0.5",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "SW153",
+            "distance": "424우",
+            "left": "-0.35",
+            "right": "0.35",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "SW161",
+            "distance": "248.44",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "16홀",
+            "cup": "SW162",
+            "distance": "255.2",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "SW163",
+            "distance": "261.74",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "SW171",
+            "distance": "474좌",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "17홀",
+            "cup": "SW172",
+            "distance": "482",
+            "left": "-0.25",
+            "right": "0.25",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "SW173",
+            "distance": "484",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "SW181",
+            "distance": "385중앞",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "18홀",
+            "cup": "SW182",
+            "distance": "395",
+            "left": "-0.15",
+            "right": "0.15",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "SW183",
+            "distance": "402뒤",
+            "left": "0.15",
+            "right": "0",
+            "note": ""
+        }
+    ],
+    "케넌": [
+        {
+            "hole": "1홀",
+            "cup": "IC011",
+            "distance": "455앞",
+            "left": "-1",
+            "right": "0.9",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "1홀",
+            "cup": "IC012",
+            "distance": "468좌",
+            "left": "-1.1",
+            "right": "1",
+            "note": ""
+        },
+        {
+            "hole": "1홀",
+            "cup": "IC013",
+            "distance": "477우",
+            "left": "-1.1",
+            "right": "1",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "IC021",
+            "distance": "181.14",
+            "left": "X",
+            "right": "X",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "2홀",
+            "cup": "IC022",
+            "distance": "197.79",
+            "left": "-0.5",
+            "right": "0.5",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "IC023",
+            "distance": "201.7",
+            "left": "-0.7",
+            "right": "0.65",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "IC031",
+            "distance": "347우",
+            "left": "-0.55",
+            "right": "0.5",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "3홀",
+            "cup": "IC032",
+            "distance": "357좌",
+            "left": "-0.4",
+            "right": "0.5",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "IC033",
+            "distance": "370뒤",
+            "left": "-0.5",
+            "right": "0.5",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "IC041",
+            "distance": "523",
+            "left": "X",
+            "right": "X",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "4홀",
+            "cup": "IC042",
+            "distance": "537",
+            "left": "X",
+            "right": "X",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "IC043",
+            "distance": "545",
+            "left": "X",
+            "right": "X",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "IC051",
+            "distance": "431",
+            "left": "X",
+            "right": "0.7",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "5홀",
+            "cup": "IC052",
+            "distance": "442",
+            "left": "-0.7",
+            "right": "0.7",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "IC053",
+            "distance": "455",
+            "left": "-0.8",
+            "right": "0.8",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "IC061",
+            "distance": "364",
+            "left": "X",
+            "right": "-1.4",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "6홀",
+            "cup": "IC062",
+            "distance": "377좌",
+            "left": "X",
+            "right": "-1.1",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "IC063",
+            "distance": "377우",
+            "left": "1.45",
+            "right": "-1.3",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "IC071",
+            "distance": "236.37",
+            "left": "X",
+            "right": "X",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "7홀",
+            "cup": "IC072",
+            "distance": "249.53",
+            "left": "-0.6",
+            "right": "0.6",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "IC073",
+            "distance": "259.14",
+            "left": "-0.6",
+            "right": "0.6",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "IC081",
+            "distance": "378",
+            "left": "0",
+            "right": "0",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "8홀",
+            "cup": "IC082",
+            "distance": "384",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "IC083",
+            "distance": "387",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "IC091",
+            "distance": "475",
+            "left": "0",
+            "right": "0",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "9홀",
+            "cup": "IC092",
+            "distance": "483",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "IC093",
+            "distance": "485",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "IC101",
+            "distance": "406",
+            "left": "-0.8",
+            "right": "0.75",
+            "note": "공0.1칸+-"
+        },
+        {
+            "hole": "10홀",
+            "cup": "IC102",
+            "distance": "420",
+            "left": "-0.8",
+            "right": "0.75",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "IC103",
+            "distance": "428중뒤",
+            "left": "-0.8",
+            "right": "0.75",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "IC111",
+            "distance": "368",
+            "left": "X",
+            "right": "X",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "11홀",
+            "cup": "IC112",
+            "distance": "386좌",
+            "left": "-0.15",
+            "right": "0.15",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "IC113",
+            "distance": "388우",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "IC121",
+            "distance": "495",
+            "left": "0",
+            "right": "0",
+            "note": "공3개"
+        },
+        {
+            "hole": "12홀",
+            "cup": "IC122",
+            "distance": "504",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "IC123",
+            "distance": "507",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "IC131",
+            "distance": "168.65",
+            "left": "X",
+            "right": "X",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "13홀",
+            "cup": "IC132",
+            "distance": "182.07",
+            "left": "0.1",
+            "right": "-0.1",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "IC133",
+            "distance": "191.39",
+            "left": "X",
+            "right": "X",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "IC141",
+            "distance": "541",
+            "left": "0.1",
+            "right": "-0.1",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "14홀",
+            "cup": "IC142",
+            "distance": "554",
+            "left": "0.15",
+            "right": "-0.15",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "IC143",
+            "distance": "558",
+            "left": "0.15",
+            "right": "-0.15",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "IC151",
+            "distance": "391",
+            "left": "-0.4",
+            "right": "0.4",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "15홀",
+            "cup": "IC152",
+            "distance": "412",
+            "left": "-0.4",
+            "right": "0.4",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "IC153",
+            "distance": "416",
+            "left": "-0.45",
+            "right": "0.45",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "IC161",
+            "distance": "180.29",
+            "left": "X",
+            "right": "X",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "16홀",
+            "cup": "IC162",
+            "distance": "184.05",
+            "left": "X",
+            "right": "X",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "IC163",
+            "distance": "188.59",
+            "left": "X",
+            "right": "X",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "IC171",
+            "distance": "421우",
+            "left": "-0.8",
+            "right": "0.8",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "17홀",
+            "cup": "IC172",
+            "distance": "431좌",
+            "left": "-1.3",
+            "right": "1.3",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "IC173",
+            "distance": "444",
+            "left": "-0.9",
+            "right": "1.05",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "IC181",
+            "distance": "570",
+            "left": "X",
+            "right": "X",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "18홀",
+            "cup": "IC182",
+            "distance": "576",
+            "left": "X",
+            "right": "X",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "IC183",
+            "distance": "578",
+            "left": "X",
+            "right": "X",
+            "note": ""
+        }
+    ],
+    "워터": [
+        {
+            "hole": "1홀",
+            "cup": "BW011",
+            "distance": "409",
+            "left": "X",
+            "right": "X",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "1홀",
+            "cup": "BW012",
+            "distance": "438",
+            "left": "0",
+            "right": "-0.63",
+            "note": ""
+        },
+        {
+            "hole": "1홀",
+            "cup": "BW013",
+            "distance": "446",
+            "left": "0.8",
+            "right": "-0.8",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "BW021",
+            "distance": "213.31",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "2홀",
+            "cup": "BW022",
+            "distance": "227.83",
+            "left": "-0.4",
+            "right": "0.45",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "BW023",
+            "distance": "235.75",
+            "left": "-0.3",
+            "right": "0.3",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "BW031",
+            "distance": "379",
+            "left": "0.2",
+            "right": "-0.25",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "3홀",
+            "cup": "BW032",
+            "distance": "392",
+            "left": "0.4",
+            "right": "-0.4",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "BW033",
+            "distance": "398",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "BW041",
+            "distance": "376",
+            "left": "0.25",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "4홀",
+            "cup": "BW042",
+            "distance": "379",
+            "left": "",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "BW043",
+            "distance": "392중뒤",
+            "left": "-0.3",
+            "right": "0.3",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "BW051",
+            "distance": "507좌",
+            "left": "-0.65",
+            "right": "0.7",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "5홀",
+            "cup": "BW052",
+            "distance": "507우",
+            "left": "-0.2",
+            "right": "0.3",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "BW053",
+            "distance": "509",
+            "left": "-0.75",
+            "right": "0.75",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "BW061",
+            "distance": "234.51",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "6홀",
+            "cup": "BW062",
+            "distance": "238.59",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "BW063",
+            "distance": "242.58",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "BW071",
+            "distance": "506",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "7홀",
+            "cup": "BW072",
+            "distance": "507우",
+            "left": "0.5",
+            "right": "-0.5",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "BW073",
+            "distance": "512",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "BW081",
+            "distance": "434좌",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "8홀",
+            "cup": "BW082",
+            "distance": "434우",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "BW083",
+            "distance": "445",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "BW091",
+            "distance": "383",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "9홀",
+            "cup": "BW092",
+            "distance": "395중뒤",
+            "left": "-0.3",
+            "right": "0.3",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "BW093",
+            "distance": "401우뒤",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "BW101",
+            "distance": "292.15",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "10홀",
+            "cup": "BW102",
+            "distance": "307.15",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "BW103",
+            "distance": "310.38",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "BW111",
+            "distance": "364",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "11홀",
+            "cup": "BW112",
+            "distance": "371",
+            "left": "0.3",
+            "right": "-0.25",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "BW113",
+            "distance": "390중뒤",
+            "left": "0.35",
+            "right": "-0.55",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "BW121",
+            "distance": "533",
+            "left": "0.25",
+            "right": "-0.2",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "12홀",
+            "cup": "BW122",
+            "distance": "544우뒤",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "BW123",
+            "distance": "558좌",
+            "left": "-0.3",
+            "right": "0.2",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "BW131",
+            "distance": "424",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "13홀",
+            "cup": "BW132",
+            "distance": "439",
+            "left": "-0.1",
+            "right": "0.1",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "BW133",
+            "distance": "441중뒤",
+            "left": "-0.15",
+            "right": "0.15",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "BW141",
+            "distance": "457",
+            "left": "토마",
+            "right": "토마",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "14홀",
+            "cup": "BW142",
+            "distance": "462",
+            "left": "-0.2",
+            "right": "0.2",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "BW143",
+            "distance": "472",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "BW151",
+            "distance": "271.84",
+            "left": "0",
+            "right": "0",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "15홀",
+            "cup": "BW152",
+            "distance": "283.21",
+            "left": "-0.1",
+            "right": "0.1",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "BW153",
+            "distance": "286.46",
+            "left": "-0.1",
+            "right": "0.1",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "BW161",
+            "distance": "227.3",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "16홀",
+            "cup": "BW162",
+            "distance": "236.12",
+            "left": "-0.2",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "BW163",
+            "distance": "245.64",
+            "left": "-0.15",
+            "right": "0.25",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "BW171",
+            "distance": "403",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "17홀",
+            "cup": "BW172",
+            "distance": "442",
+            "left": "0.1",
+            "right": "-0.1",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "BW173",
+            "distance": "453",
+            "left": "-0.15",
+            "right": "0.1",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "BW181",
+            "distance": "405좌앞",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "18홀",
+            "cup": "BW182",
+            "distance": "434",
+            "left": "0.3",
+            "right": "-0.3",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "BW183",
+            "distance": "444",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        }
+    ],
+    "블문": [
+        {
+            "hole": "1홀",
+            "cup": "BM011",
+            "distance": "377",
+            "left": "X",
+            "right": "X",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "1홀",
+            "cup": "BM012",
+            "distance": "385",
+            "left": "0.6",
+            "right": "-0.7",
+            "note": ""
+        },
+        {
+            "hole": "1홀",
+            "cup": "BM013",
+            "distance": "401",
+            "left": "0.55",
+            "right": "-0.75",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "BM021",
+            "distance": "228.26",
+            "left": "-0.45",
+            "right": "0.4",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "2홀",
+            "cup": "BM022",
+            "distance": "231.38",
+            "left": "-0.1",
+            "right": "0.2",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "BM023",
+            "distance": "241.9",
+            "left": "-1",
+            "right": "1",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "BM031",
+            "distance": "375",
+            "left": "0.3",
+            "right": "-0.3",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "3홀",
+            "cup": "BM032",
+            "distance": "386",
+            "left": "-0.2",
+            "right": "0.2",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "BM033",
+            "distance": "394",
+            "left": "-0.1",
+            "right": "?",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "BM041",
+            "distance": "417",
+            "left": "-0.15",
+            "right": "0.15",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "4홀",
+            "cup": "BM042",
+            "distance": "434우",
+            "left": "0.5",
+            "right": "-0.5",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "BM043",
+            "distance": "438",
+            "left": "-0.65",
+            "right": "0.65",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "BM051",
+            "distance": "497",
+            "left": "0",
+            "right": "0",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "5홀",
+            "cup": "BM052",
+            "distance": "507좌",
+            "left": "X",
+            "right": "X",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "BM053",
+            "distance": "515",
+            "left": "0.15",
+            "right": "-0.15",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "BM061",
+            "distance": "206.75",
+            "left": "X",
+            "right": "0.5",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "6홀",
+            "cup": "BM062",
+            "distance": "209.96",
+            "left": "0.15",
+            "right": "-0.1",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "BM063",
+            "distance": "221.41",
+            "left": "-0.2",
+            "right": "0.2",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "BM071",
+            "distance": "537",
+            "left": "-0.55",
+            "right": "0.4",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "7홀",
+            "cup": "BM072",
+            "distance": "542",
+            "left": "?",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "BM073",
+            "distance": "555뒤",
+            "left": "-0.5",
+            "right": "0.45",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "BM081",
+            "distance": "412",
+            "left": "X",
+            "right": "X",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "8홀",
+            "cup": "BM082",
+            "distance": "422",
+            "left": "X",
+            "right": "X",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "BM083",
+            "distance": "437",
+            "left": "X",
+            "right": "X",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "BM091",
+            "distance": "414",
+            "left": "0.2",
+            "right": "-0.2",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "9홀",
+            "cup": "BM092",
+            "distance": "427좌",
+            "left": "0.6",
+            "right": "X",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "BM093",
+            "distance": "432",
+            "left": "0.3",
+            "right": "-0.3",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "BM101",
+            "distance": "220.89좌",
+            "left": "0.1",
+            "right": "-0.1",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "10홀",
+            "cup": "BM102",
+            "distance": "220.94우",
+            "left": "X",
+            "right": "X",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "BM103",
+            "distance": "236.11",
+            "left": "0.7",
+            "right": "-0.65",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "BM111",
+            "distance": "440좌",
+            "left": "X",
+            "right": "X",
+            "note": "굴리는홀"
+        },
+        {
+            "hole": "11홀",
+            "cup": "BM112",
+            "distance": "441중",
+            "left": "0.5",
+            "right": "-0.25",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "BM113",
+            "distance": "455뒤",
+            "left": "0.3",
+            "right": "-0.35",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "BM121",
+            "distance": "268.30",
+            "left": "0.4",
+            "right": "0.1",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "12홀",
+            "cup": "BM122",
+            "distance": "268.95",
+            "left": "x",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "BM123",
+            "distance": "279.53",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "BM131",
+            "distance": "385",
+            "left": "X",
+            "right": "X",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "13홀",
+            "cup": "BM132",
+            "distance": "395",
+            "left": "-0.1",
+            "right": "0.1",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "BM133",
+            "distance": "396뒤",
+            "left": "0.45",
+            "right": "-0.35",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "BM141",
+            "distance": "370",
+            "left": "X",
+            "right": "-0.2",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "14홀",
+            "cup": "BM142",
+            "distance": "384",
+            "left": "-0.3",
+            "right": "0.3",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "BM143",
+            "distance": "395",
+            "left": "0.2",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "BM151",
+            "distance": "505",
+            "left": "X",
+            "right": "X",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "15홀",
+            "cup": "BM152",
+            "distance": "507",
+            "left": "X",
+            "right": "0.55",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "BM153",
+            "distance": "512",
+            "left": "X",
+            "right": "0.65",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "BM161",
+            "distance": "265.25",
+            "left": "X",
+            "right": "X",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "16홀",
+            "cup": "BM162",
+            "distance": "268.28",
+            "left": "X",
+            "right": "X",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "BM163",
+            "distance": "285.13",
+            "left": "X",
+            "right": "X",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "BM171",
+            "distance": "424",
+            "left": "X",
+            "right": "X",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "17홀",
+            "cup": "BM172",
+            "distance": "427",
+            "left": "0.3",
+            "right": "-0.3",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "BM173",
+            "distance": "435",
+            "left": "-0.1",
+            "right": "0.1",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "BM181",
+            "distance": "455",
+            "left": "-0.25",
+            "right": "0.35",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "18홀",
+            "cup": "BM182",
+            "distance": "461좌중",
+            "left": "X",
+            "right": "X",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "BM183",
+            "distance": "476",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        }
+    ],
+    "위즈": [
+        {
+            "hole": "1홀",
+            "cup": "WI011",
+            "distance": "1굴덩",
+            "left": "0.47",
+            "right": "-0.47",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "1홀",
+            "cup": "WI012",
+            "distance": "3토마",
+            "left": "*",
+            "right": "*",
+            "note": ""
+        },
+        {
+            "hole": "1홀",
+            "cup": "WI013",
+            "distance": "1백습",
+            "left": "*",
+            "right": "*",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "WI021",
+            "distance": "496",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "2홀",
+            "cup": "WI022",
+            "distance": "501",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "WI023",
+            "distance": "513",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "WI031",
+            "distance": "220.92",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "3홀",
+            "cup": "WI032",
+            "distance": "238.44",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "WI033",
+            "distance": "243.35",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "WI041",
+            "distance": "222.43",
+            "left": "-0.1",
+            "right": "0.1",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "4홀",
+            "cup": "WI042",
+            "distance": "236.68",
+            "left": "-0.5",
+            "right": "0.5",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "WI043",
+            "distance": "244.43",
+            "left": "-0.45",
+            "right": "0.45",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "WI051",
+            "distance": "470좌중",
+            "left": "0.4",
+            "right": "-0.35",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "5홀",
+            "cup": "WI052",
+            "distance": "471우",
+            "left": "0.35",
+            "right": "-0.5",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "WI053",
+            "distance": "484좌뒤",
+            "left": "-0.2",
+            "right": "0.2",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "WI061",
+            "distance": "513",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "6홀",
+            "cup": "WI062",
+            "distance": "523",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "WI063",
+            "distance": "541",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "WI071",
+            "distance": "405",
+            "left": "0",
+            "right": "0.05",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "7홀",
+            "cup": "WI072",
+            "distance": "415중",
+            "left": "0.1",
+            "right": "-0.1",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "WI073",
+            "distance": "424좌",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "WI081",
+            "distance": "396",
+            "left": "0.2",
+            "right": "0",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "8홀",
+            "cup": "WI082",
+            "distance": "407",
+            "left": "0.1",
+            "right": "-0.1",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "WI083",
+            "distance": "414",
+            "left": "0.2",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "WI091",
+            "distance": "216.28",
+            "left": "0.1",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "9홀",
+            "cup": "WI092",
+            "distance": "224.7",
+            "left": "-0.1",
+            "right": "0.15",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "WI093",
+            "distance": "239.43",
+            "left": "x",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "WI101",
+            "distance": "242.97",
+            "left": "0.8",
+            "right": "-0.8",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "10홀",
+            "cup": "WI102",
+            "distance": "258.57",
+            "left": "0",
+            "right": "-0.4",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "WI103",
+            "distance": "265.81",
+            "left": "-0.2",
+            "right": "0.3",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "WI111",
+            "distance": "446앞",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "11홀",
+            "cup": "WI112",
+            "distance": "464중",
+            "left": "-0.1",
+            "right": "0.1",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "WI113",
+            "distance": "468우",
+            "left": "-0.2",
+            "right": "0.2",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "WI121",
+            "distance": "379우중",
+            "left": "-0.6",
+            "right": "0.4",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "12홀",
+            "cup": "WI122",
+            "distance": "394중뒤",
+            "left": "-0.5",
+            "right": "0.5",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "WI123",
+            "distance": "399좌",
+            "left": "-0.65",
+            "right": "0.65",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "WI131",
+            "distance": "213.13",
+            "left": "-0.2",
+            "right": "0.35",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "13홀",
+            "cup": "WI132",
+            "distance": "220.47",
+            "left": "-0.25",
+            "right": "-0.5",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "WI133",
+            "distance": "225.33",
+            "left": "0",
+            "right": "0.2",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "WI141",
+            "distance": "371중",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "14홀",
+            "cup": "WI142",
+            "distance": "378",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "WI143",
+            "distance": "383",
+            "left": "-0.2",
+            "right": "0.2",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "WI151",
+            "distance": "385우중",
+            "left": "-0.1",
+            "right": "0.1",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "15홀",
+            "cup": "WI152",
+            "distance": "389중",
+            "left": "0",
+            "right": "0.4",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "WI153",
+            "distance": "400좌",
+            "left": "-0.45",
+            "right": "0.45",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "WI161",
+            "distance": "211.5",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "16홀",
+            "cup": "WI162",
+            "distance": "221.09",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "WI163",
+            "distance": "228.97",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "WI171",
+            "distance": "257.65",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "17홀",
+            "cup": "WI172",
+            "distance": "260.73",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "WI173",
+            "distance": "272.48",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "WI181",
+            "distance": "390앞",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "18홀",
+            "cup": "WI182",
+            "distance": "406좌",
+            "left": "-0.4",
+            "right": "0.4",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "WI183",
+            "distance": "406우",
+            "left": "-0.5",
+            "right": "0.4",
+            "note": ""
+        }
+    ],
+    "인페": [
+        {
+            "hole": "1홀",
+            "cup": "DI011",
+            "distance": "359",
+            "left": "0",
+            "right": "0",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "1홀",
+            "cup": "DI012",
+            "distance": "371중뒤",
+            "left": "0",
+            "right": "0.2",
+            "note": ""
+        },
+        {
+            "hole": "1홀",
+            "cup": "DI013",
+            "distance": "374",
+            "left": "0.1",
+            "right": "-0.1",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "DI021",
+            "distance": "260.81",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "2홀",
+            "cup": "DI022",
+            "distance": "263.23",
+            "left": "-0.5",
+            "right": "0.5",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "DI023",
+            "distance": "272.75",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "DI031",
+            "distance": "461",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "3홀",
+            "cup": "DI032",
+            "distance": "463",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "DI033",
+            "distance": "473",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "DI041",
+            "distance": "473",
+            "left": "0",
+            "right": "0",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "4홀",
+            "cup": "DI042",
+            "distance": "477우",
+            "left": "-0.05",
+            "right": "0.05",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "DI043",
+            "distance": "486중뒤",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "DI051",
+            "distance": "508",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "5홀",
+            "cup": "DI052",
+            "distance": "512",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "DI053",
+            "distance": "521",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "DI061",
+            "distance": "237.2",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "6홀",
+            "cup": "DI062",
+            "distance": "237.95",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "DI063",
+            "distance": "241.04",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "DI071",
+            "distance": "424",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "7홀",
+            "cup": "DI072",
+            "distance": "434",
+            "left": "0",
+            "right": "0.15",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "DI073",
+            "distance": "440",
+            "left": "-0.2",
+            "right": "0.2",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "DI081",
+            "distance": "327",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "8홀",
+            "cup": "DI082",
+            "distance": "335",
+            "left": "x",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "DI083",
+            "distance": "340중",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "DI091",
+            "distance": "548",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "9홀",
+            "cup": "DI092",
+            "distance": "551",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "DI093",
+            "distance": "553",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "DI101",
+            "distance": "456",
+            "left": "0.3",
+            "right": "X",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "10홀",
+            "cup": "DI102",
+            "distance": "465",
+            "left": "x",
+            "right": "-0.45",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "DI103",
+            "distance": "472",
+            "left": "0.3",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "DI111",
+            "distance": "447",
+            "left": "-0.5",
+            "right": "0.5",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "11홀",
+            "cup": "DI112",
+            "distance": "449좌",
+            "left": "-0.3",
+            "right": "0.35",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "DI113",
+            "distance": "456",
+            "left": "-0.55",
+            "right": "0.6",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "DI121",
+            "distance": "273.01",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "12홀",
+            "cup": "DI122",
+            "distance": "279.61",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "DI123",
+            "distance": "288.78",
+            "left": "-0.9",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "DI131",
+            "distance": "456",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "13홀",
+            "cup": "DI132",
+            "distance": "465",
+            "left": "0.7",
+            "right": "-0.7",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "DI133",
+            "distance": "472",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "DI141",
+            "distance": "506",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "14홀",
+            "cup": "DI142",
+            "distance": "516",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "DI143",
+            "distance": "522",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "DI151",
+            "distance": "429",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "15홀",
+            "cup": "DI152",
+            "distance": "442",
+            "left": "0.9",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "DI153",
+            "distance": "445",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "DI161",
+            "distance": "259.68",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "16홀",
+            "cup": "DI162",
+            "distance": "270.81",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "DI163",
+            "distance": "275.42",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "DI171",
+            "distance": "483",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "17홀",
+            "cup": "DI172",
+            "distance": "489",
+            "left": "-0.15",
+            "right": "0.2",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "DI173",
+            "distance": "x",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "DI181",
+            "distance": "404",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "18홀",
+            "cup": "DI182",
+            "distance": "418",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "DI183",
+            "distance": "x",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        }
+    ],
+    "원힐": [
+        {
+            "hole": "1홀",
+            "cup": "WH011",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "1홀",
+            "cup": "WH012",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "1홀",
+            "cup": "WH013",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "WH021",
+            "distance": "303.07",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "2홀",
+            "cup": "WH022",
+            "distance": "311.76",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "WH023",
+            "distance": "319.69",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "WH031",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "3홀",
+            "cup": "WH032",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "WH033",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "WH041",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "4홀",
+            "cup": "WH042",
+            "distance": "461",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "WH043",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "WH051",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "5홀",
+            "cup": "WH052",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "WH053",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "WH061",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "6홀",
+            "cup": "WH062",
+            "distance": "417",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "WH063",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "WH071",
+            "distance": "244.47",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "7홀",
+            "cup": "WH072",
+            "distance": "256.13",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "WH073",
+            "distance": "257.88",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "WH081",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "8홀",
+            "cup": "WH082",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "WH083",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "WH091",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "9홀",
+            "cup": "WH092",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "WH093",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "WH101",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "10홀",
+            "cup": "WH102",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "WH103",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "WH111",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "11홀",
+            "cup": "WH112",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "WH113",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "WH121",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "12홀",
+            "cup": "WH122",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "WH123",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "WH131",
+            "distance": "239.51",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "13홀",
+            "cup": "WH132",
+            "distance": "240.73",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "WH133",
+            "distance": "251.37",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "WH141",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "14홀",
+            "cup": "WH142",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "WH143",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "WH151",
+            "distance": "",
+            "left": "2우드스파",
+            "right": "힘 2픽추가",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "15홀",
+            "cup": "WH152",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "WH153",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "WH161",
+            "distance": "252.77",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "16홀",
+            "cup": "WH162",
+            "distance": "264.37",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "WH163",
+            "distance": "269.97",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "WH171",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "17홀",
+            "cup": "WH172",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "WH173",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "WH181",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "18홀",
+            "cup": "WH182",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "WH183",
+            "distance": "",
+            "left": "x",
+            "right": "x",
+            "note": ""
+        }
+    ],
+    "실비아케넌": [
+        {
+            "hole": "1홀",
+            "cup": "AA011",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": "Fighting!"
+        },
+        {
+            "hole": "1홀",
+            "cup": "AA012",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "1홀",
+            "cup": "AA013",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "AA021",
+            "distance": "229.24",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "AA022",
+            "distance": "241.27",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "AA023",
+            "distance": "242.62",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "AA031",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "AA032",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "AA033",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "AA041",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "AA042",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "AA043",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "AA051",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "AA052",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "AA053",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "AA061",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "AA062",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "AA063",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "AA071",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "AA072",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "AA073",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "AA081",
+            "distance": "304.93",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "AA082",
+            "distance": "314.92",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "AA083",
+            "distance": "334.51",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "AA091",
+            "distance": "221.36",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "AA092",
+            "distance": "234.35",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "AA093",
+            "distance": "234.83",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "AA101",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "AA102",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "AA103",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "AA111",
+            "distance": "262.83",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "AA112",
+            "distance": "273.11",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "AA113",
+            "distance": "290.4",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "AA121",
+            "distance": "167.64",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "AA122",
+            "distance": "168.7",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "AA123",
+            "distance": "179.47",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "AA131",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "AA132",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "AA133",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "AA141",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "AA142",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "AA143",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "AA151",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "AA152",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "AA153",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "AA161",
+            "distance": "208.63",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "AA162",
+            "distance": "209.12",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "AA163",
+            "distance": "222.51",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "AA171",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "AA172",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "AA173",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "AA181",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "AA182",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "AA183",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        }
+    ],
+    "밸리": [
+        {
+            "hole": "1홀",
+            "cup": "AB011",
+            "distance": "388",
+            "left": "-0.25",
+            "right": "0.25",
+            "note": ""
+        },
+        {
+            "hole": "1홀",
+            "cup": "AB012",
+            "distance": "396",
+            "left": "-0.6",
+            "right": "0.65",
+            "note": ""
+        },
+        {
+            "hole": "1홀",
+            "cup": "AB013",
+            "distance": "402",
+            "left": "-0.3",
+            "right": "0.3",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "AB021",
+            "distance": "514",
+            "left": "*",
+            "right": "*",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "AB022",
+            "distance": "515",
+            "left": "*",
+            "right": "*",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "AB023",
+            "distance": "521",
+            "left": "*",
+            "right": "*",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "AB031",
+            "distance": "198",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "AB032",
+            "distance": "204(중간)",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "AB033",
+            "distance": "204(우측)",
+            "left": "0.1",
+            "right": "-0.1",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "AB041",
+            "distance": "401",
+            "left": "0",
+            "right": "0.05",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "AB042",
+            "distance": "407",
+            "left": "0",
+            "right": "0.05",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "AB043",
+            "distance": "408",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "AB051",
+            "distance": "366",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "AB052",
+            "distance": "373",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "AB053",
+            "distance": "",
+            "left": "*",
+            "right": "*",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "AB061",
+            "distance": "386",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "AB062",
+            "distance": "389",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "AB063",
+            "distance": "390",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "AB071",
+            "distance": "480",
+            "left": "*",
+            "right": "*",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "AB072",
+            "distance": "488",
+            "left": "*",
+            "right": "*",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "AB073",
+            "distance": "493",
+            "left": "0.15",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "AB081",
+            "distance": "258",
+            "left": "-0.15",
+            "right": "0.15",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "AB082",
+            "distance": "267",
+            "left": "-0.2",
+            "right": "0.2",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "AB083",
+            "distance": "269",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "AB091",
+            "distance": "290",
+            "left": "*",
+            "right": "*",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "AB092",
+            "distance": "294",
+            "left": "*",
+            "right": "*",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "AB093",
+            "distance": "299",
+            "left": "*",
+            "right": "*",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "AB101",
+            "distance": "224",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "AB102",
+            "distance": "225",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "AB103",
+            "distance": "233",
+            "left": "-0.1",
+            "right": "0.1",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "AB111",
+            "distance": "442",
+            "left": "*",
+            "right": "*",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "AB112",
+            "distance": "450",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "AB113",
+            "distance": "457",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "AB121",
+            "distance": "486",
+            "left": "*",
+            "right": "*",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "AB122",
+            "distance": "493",
+            "left": "*",
+            "right": "0.55",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "AB123",
+            "distance": "494",
+            "left": "*",
+            "right": "0.75",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "AB131",
+            "distance": "375",
+            "left": "0.1",
+            "right": "-0.1",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "AB132",
+            "distance": "385",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "AB133",
+            "distance": "394",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "AB141",
+            "distance": "371",
+            "left": "*",
+            "right": "*",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "AB142",
+            "distance": "374",
+            "left": "*",
+            "right": "*",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "AB143",
+            "distance": "380",
+            "left": "0",
+            "right": "0",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "AB151",
+            "distance": "241",
+            "left": "-0.45",
+            "right": "0.425",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "AB152",
+            "distance": "249",
+            "left": "-0.5",
+            "right": "0.5",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "AB153",
+            "distance": "250",
+            "left": "-0.5",
+            "right": "0.5",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "AB161",
+            "distance": "380",
+            "left": "0.1",
+            "right": "-0.1",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "AB162",
+            "distance": "382",
+            "left": "0.15",
+            "right": "-0.15",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "AB163",
+            "distance": "384",
+            "left": "0.2",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "AB171",
+            "distance": "354",
+            "left": "*",
+            "right": "*",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "AB172",
+            "distance": "358",
+            "left": "0.3",
+            "right": "-0.3",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "AB173",
+            "distance": "364",
+            "left": "0.2",
+            "right": "-0.2",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "AB181",
+            "distance": "343",
+            "left": "*",
+            "right": "*",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "AB182",
+            "distance": "346",
+            "left": "0.7",
+            "right": "-0.7",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "AB183",
+            "distance": "347",
+            "left": "0.55",
+            "right": "-0.55",
+            "note": ""
+        }
+    ],
+    "추가2": [
+        {
+            "hole": "1홀",
+            "cup": "AC011",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "1홀",
+            "cup": "AC012",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "1홀",
+            "cup": "AC013",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "AC021",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "AC022",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "AC023",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "AC031",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "AC032",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "AC033",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "AC041",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "AC042",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "AC043",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "AC051",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "AC052",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "AC053",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "AC061",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "AC062",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "AC063",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "AC071",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "AC072",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "AC073",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "AC081",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "AC082",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "AC083",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "AC091",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "AC092",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "AC093",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "AC101",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "AC102",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "AC103",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "AC111",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "AC112",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "AC113",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "AC121",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "AC122",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "AC123",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "AC131",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "AC132",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "AC133",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "AC141",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "AC142",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "AC143",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "AC151",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "AC152",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "AC153",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "AC161",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "AC162",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "AC163",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "AC171",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "AC172",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "AC173",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "AC181",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "AC182",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "AC183",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        }
+    ],
+    "0": [
+        {
+            "hole": "1홀",
+            "cup": "AD011",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "1홀",
+            "cup": "AD012",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "1홀",
+            "cup": "AD013",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "AD021",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "AD022",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "2홀",
+            "cup": "AD023",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "AD031",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "AD032",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "3홀",
+            "cup": "AD033",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "AD041",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "AD042",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "4홀",
+            "cup": "AD043",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "AD051",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "AD052",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "5홀",
+            "cup": "AD053",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "AD061",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "AD062",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "6홀",
+            "cup": "AD063",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "AD071",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "AD072",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "7홀",
+            "cup": "AD073",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "AD081",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "AD082",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "8홀",
+            "cup": "AD083",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "AD091",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "AD092",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "9홀",
+            "cup": "AD093",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "AD101",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "AD102",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "10홀",
+            "cup": "AD103",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "AD111",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "AD112",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "11홀",
+            "cup": "AD113",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "AD121",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "AD122",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "12홀",
+            "cup": "AD123",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "AD131",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "AD132",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "13홀",
+            "cup": "AD133",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "AD141",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "AD142",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "14홀",
+            "cup": "AD143",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "AD151",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "AD152",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "15홀",
+            "cup": "AD153",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "AD161",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "AD162",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "16홀",
+            "cup": "AD163",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "AD171",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "AD172",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "17홀",
+            "cup": "AD173",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "AD181",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "AD182",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        },
+        {
+            "hole": "18홀",
+            "cup": "AD183",
+            "distance": "",
+            "left": "",
+            "right": "",
+            "note": ""
+        }
+    ]
+}

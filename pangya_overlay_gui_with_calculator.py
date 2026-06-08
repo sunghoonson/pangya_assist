@@ -6,7 +6,6 @@ import ctypes
 import math
 from copy import deepcopy
 import ctypes.wintypes
-
 # =========================================================
 # DPI 설정
 # 반드시 PySide6 import 전에 실행
@@ -32,7 +31,6 @@ def enable_dpi_awareness():
         print("[INFO] DPI Awareness: System DPI Aware")
     except Exception as e:
         print(f"[WARN] DPI Awareness 설정 실패: {e}")
-
 
 os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "0"
 os.environ["QT_SCALE_FACTOR"] = "1"
@@ -74,6 +72,26 @@ except Exception as e:
     calc_shot = None
     print(f"[WARN] pangya_acrisio 모듈 로드 실패: {e}")
 
+# try:
+#     from pangya_auto_controller import PangyaAutoDetectController
+# except Exception as e:
+#     PangyaAutoDetectController = None
+#     print(f"[WARN] pangya_auto_controller 모듈 로드 실패: {e}")
+# 자동 OCR 인식 기능은 현재 보류 상태입니다.
+# 빌드 용량 절감을 위해 pangya_auto_controller / pangya_vision / easyocr 계열 import를 막습니다.
+PangyaAutoDetectController = None
+
+try:
+    from pangya_wind_angle_panel import PangyaWindAnglePanel
+except Exception as e:
+    PangyaWindAnglePanel = None
+    print(f"[WARN] pangya_wind_angle_panel 모듈 로드 실패: {e}")
+
+try:
+    from pangya_bounding_panel import PangyaBoundingPanel
+except Exception as e:
+    PangyaBoundingPanel = None
+    print(f"[WARN] pangya_bounding_panel 모듈 로드 실패: {e}")
 # =========================================================
 # 캡처/녹화 제외 유틸
 # =========================================================
@@ -160,9 +178,15 @@ DEFAULT_SETTINGS = {
     "show_wind": True,
     "show_slope": True,
 
+    # 캡처/녹화 제외 옵션
+    "capture_exclude_enabled": True,
+
     # 전역 토글 단축키
     # 예: F8, Ctrl+F8, Ctrl+Alt+F8
     "toggle_hotkey": "F8",
+
+    # GUI 표시 배율
+    "ui_scale": 1.0,
 }
 
 
@@ -203,6 +227,105 @@ def load_settings():
         print(f"[WARN] 설정 파일 로드 실패. 기본값 사용: {e}")
         return normalize_settings({})
 
+def safe_float(value, default=1.0):
+    try:
+        return float(value)
+    except Exception:
+        return default
+
+
+def apply_gui_scale(settings):
+    app = QApplication.instance()
+
+    if app is None:
+        return
+
+    scale = safe_float(settings.get("ui_scale", 1.0), 1.0)
+
+    if scale < 0.8:
+        scale = 0.8
+
+    if scale > 3.0:
+        scale = 3.0
+
+    # 4K 실사용 기준으로 기본값을 조금 크게 잡음
+    font_size = max(10, int(round(12 * scale)))
+    control_height = max(28, int(round(30 * scale)))
+    tab_height = max(26, int(round(30 * scale)))
+    row_height = max(26, int(round(28 * scale)))
+    padding_v = max(3, int(round(4 * scale)))
+    padding_h = max(6, int(round(8 * scale)))
+
+    font = QFont("Malgun Gothic")
+    font.setPointSize(font_size)
+
+    app.setFont(font)
+
+    app.setStyleSheet(f"""
+        QWidget {{
+            font-family: "Malgun Gothic";
+            font-size: {font_size}pt;
+        }}
+
+        QLabel,
+        QCheckBox,
+        QGroupBox {{
+            font-size: {font_size}pt;
+        }}
+
+        QLineEdit,
+        QComboBox,
+        QSpinBox,
+        QDoubleSpinBox,
+        QPushButton {{
+            min-height: {control_height}px;
+            padding: {padding_v}px {padding_h}px;
+            font-size: {font_size}pt;
+        }}
+
+        QTabBar::tab {{
+            min-height: {tab_height}px;
+            padding: {padding_v + 1}px {padding_h + 2}px;
+            font-size: {font_size}pt;
+        }}
+
+        QHeaderView::section {{
+            min-height: {control_height}px;
+            padding: {padding_v}px {padding_h}px;
+            font-size: {font_size}pt;
+        }}
+
+        QTableWidget {{
+            font-size: {font_size}pt;
+        }}
+
+        QTableWidget::item {{
+            padding: {padding_v}px {padding_h}px;
+        }}
+
+        QPlainTextEdit {{
+            font-size: {font_size}pt;
+        }}
+    """)
+
+    # 이미 만들어진 위젯에도 강제로 폰트/크기 재적용
+    for widget in app.allWidgets():
+        try:
+            widget.setFont(font)
+
+            if hasattr(widget, "verticalHeader"):
+                widget.verticalHeader().setDefaultSectionSize(row_height)
+
+            if hasattr(widget, "horizontalHeader"):
+                widget.horizontalHeader().setMinimumHeight(control_height)
+
+            widget.updateGeometry()
+            widget.update()
+
+        except Exception:
+            pass
+
+    print(f"[INFO] GUI 배율 적용: scale={scale}, font_size={font_size}, control_height={control_height}, row_height={row_height}")
 
 def save_settings(settings):
     path = get_settings_path()
@@ -366,7 +489,7 @@ class HotkeyCaptureLineEdit(QLineEdit):
     """
     def __init__(self):
         super().__init__()
-
+        
         self.capture_mode = False
         self.setReadOnly(True)
         self.setPlaceholderText("단축키 입력 버튼을 누른 뒤 실제 키 조합을 입력")
@@ -378,7 +501,7 @@ class HotkeyCaptureLineEdit(QLineEdit):
         self.selectAll()
 
     def stop_capture(self):
-        self.capture_mode = False
+        self.capture_mode = False    
 
     def keyPressEvent(self, event):
         if not self.capture_mode:
@@ -586,6 +709,7 @@ class PangyaOverlay(QWidget):
         self.last_top = None
         self.last_width = None
         self.last_height = None
+        self.calc_state = None
 
         self.setWindowFlags(
             Qt.FramelessWindowHint |
@@ -606,7 +730,7 @@ class PangyaOverlay(QWidget):
         self.overlay_hwnd = int(self.winId())
 
         self.apply_overlay_window_style()
-        set_window_capture_excluded(self.overlay_hwnd, True)
+        self.apply_capture_exclude_setting()
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_overlay)
@@ -616,7 +740,109 @@ class PangyaOverlay(QWidget):
 
     def set_settings(self, settings):
         self.settings = normalize_settings(settings)
+        self.apply_capture_exclude_setting()
         self.update()
+    
+    def apply_capture_exclude_setting(self):
+        enabled = bool(self.settings.get("capture_exclude_enabled", True))
+        set_window_capture_excluded(self.overlay_hwnd, enabled)
+
+    def set_calc_state(self, calc_state):
+        self.calc_state = calc_state
+        self.update()
+
+    def get_current_window_rect(self):
+        if not self.target_hwnd:
+            return None
+
+        try:
+            (
+                left,
+                top,
+                right,
+                bottom,
+                window_left,
+                window_top,
+                window_right,
+                window_bottom,
+                client_left,
+                client_top,
+                client_right,
+                client_bottom
+            ) = get_client_rect_on_screen(self.target_hwnd)
+
+            width = right - left
+            height = bottom - top
+
+            if width <= 0 or height <= 0:
+                return None
+
+            from pangya_models import GameWindowRect
+
+            return GameWindowRect(
+                left=left,
+                top=top,
+                right=right,
+                bottom=bottom,
+                width=width,
+                height=height,
+            )
+
+        except Exception as e:
+            print(f"[WARN] get_current_window_rect 실패: {e}")
+            return None
+
+    def draw_calc_result_panel(self, painter, scale_x, scale_y):
+        if self.calc_state is None:
+            return
+
+        x = int(40 * scale_x)
+        y = int(120 * scale_y)
+        line_h = int(24 * scale_y)
+
+        painter.setFont(QFont("Arial", 11))
+
+        # 배경
+        panel_w = int(360 * scale_x)
+        panel_h = int(170 * scale_y)
+
+        painter.setPen(QPen(QColor(0, 0, 0, 180), 1))
+        painter.setBrush(QColor(0, 0, 0, 130))
+        painter.drawRect(x - 10, y - 25, panel_w, panel_h)
+
+        painter.setBrush(Qt.NoBrush)
+
+        detected = self.calc_state.auto_input
+
+        lines = [
+            f"거리: {detected.distance if detected.distance is not None else '-'}y",
+            f"고저: {detected.height if detected.height is not None else '-'}",
+            f"바람: {detected.wind if detected.wind is not None else '-'}",
+            f"각도: {detected.degree if detected.degree is not None else '-'}",
+            "",
+        ]
+
+        for shot_name in ["DUNK", "TOMAHAWK", "SPIKE", "COBRA"]:
+            result = self.calc_state.shot_results.get(shot_name)
+
+            if result is None:
+                continue
+
+            if result.ok:
+                lines.append(
+                    f"{shot_name}: {result.power_percent:.1f}% / {result.shot_yards:.1f}y / {result.board_cells:.3f}칸"
+                )
+            else:
+                lines.append(f"{shot_name}: 실패 - {result.message}")
+
+        for idx, text in enumerate(lines):
+            ty = y + idx * line_h
+
+            painter.setPen(QPen(QColor(0, 0, 0, 230), 1))
+            painter.drawText(x + 1, ty + 1, text)
+
+            painter.setPen(QPen(QColor(255, 255, 255, 240), 1))
+            painter.drawText(x, ty, text)
 
     def start_overlay(self):
         self.is_running = True
@@ -740,7 +966,7 @@ class PangyaOverlay(QWidget):
         if was_hidden:
             self.show()
             self.apply_overlay_window_style()
-            set_window_capture_excluded(self.overlay_hwnd, True)
+            self.apply_capture_exclude_setting()
 
         need_move = (
             was_hidden or
@@ -1114,6 +1340,7 @@ class PangyaOverlay(QWidget):
                 slope_center_y
             )
 
+        self.draw_calc_result_panel(painter, scale_x, scale_y)
 
 # =========================================================
 # 설정 GUI 클래스
@@ -1132,15 +1359,32 @@ class PangyaControlWindow(QWidget):
         self.last_calc_shot_type = None
 
         self.setWindowTitle("Pangya Assist Overlay 설정")
-        self.setMinimumWidth(520)
+        self.setWindowTitle("Pangya Assist Overlay 설정")
+        self.setMinimumWidth(900)
+        self.setMinimumHeight(700)
 
         self.build_ui()
         self.bind_events()
         self.load_settings_to_ui()
 
-        set_window_capture_excluded(int(self.winId()), True)
+        set_window_capture_excluded
+
+        self.auto_controller = None
+
+        # 숫자 OCR 자동 인식은 현재 보류.
+        # 바람각도는 별도 캡처/클릭 방식으로 처리한다.
+        # if PangyaAutoDetectController is not None:
+        #     self.auto_controller = PangyaAutoDetectController(
+        #         overlay=self.overlay,
+        #         get_window_rect_func=self.overlay.get_current_window_rect,
+        #         parent=self,
+        #     )
 
         #self.register_hotkey_from_settings()
+
+    def apply_control_window_capture_exclude(self):
+        enabled = bool(self.settings.get("capture_exclude_enabled", True))
+        set_window_capture_excluded(int(self.winId()), enabled)
 
     def build_ui(self):
         root = QVBoxLayout(self)
@@ -1150,12 +1394,18 @@ class PangyaControlWindow(QWidget):
 
         self.overlay_tab = QWidget()
         self.calc_tab = QWidget()
+        self.wind_angle_tab = QWidget()
+        self.bounding_tab = QWidget()
 
         self.tabs.addTab(self.overlay_tab, "오버레이")
         self.tabs.addTab(self.calc_tab, "계산기")
+        self.tabs.addTab(self.wind_angle_tab, "바람각도")
+        self.tabs.addTab(self.bounding_tab, "바운딩")
 
         overlay_root = QVBoxLayout(self.overlay_tab)
         calc_root = QVBoxLayout(self.calc_tab)
+        wind_angle_root = QVBoxLayout(self.wind_angle_tab)
+        bounding_root = QVBoxLayout(self.bounding_tab)
 
         status_group = QGroupBox("실행")
         status_layout = QGridLayout(status_group)
@@ -1191,10 +1441,22 @@ class PangyaControlWindow(QWidget):
 
         basic_layout.addWidget(QLabel("대상 EXE"), 0, 0)
         basic_layout.addWidget(self.target_exe_edit, 0, 1)
+
         basic_layout.addWidget(QLabel("On/Off 단축키"), 1, 0)
         basic_layout.addWidget(self.hotkey_edit, 1, 1)
+
         basic_layout.addWidget(QLabel(""), 2, 0)
         basic_layout.addLayout(hotkey_button_layout, 2, 1)
+
+        # GUI 배율
+        self.ui_scale_spin = QDoubleSpinBox()
+        self.ui_scale_spin.setRange(0.8, 3.0)
+        self.ui_scale_spin.setSingleStep(0.05)
+        self.ui_scale_spin.setDecimals(2)
+        self.ui_scale_spin.setValue(float(self.settings.get("ui_scale", 1.0)))
+
+        basic_layout.addWidget(QLabel("GUI 배율"), 3, 0)
+        basic_layout.addWidget(self.ui_scale_spin, 3, 1)
 
         overlay_root.addWidget(basic_group)
 
@@ -1265,11 +1527,13 @@ class PangyaControlWindow(QWidget):
         self.show_grid_check = QCheckBox("눈금")
         self.show_wind_check = QCheckBox("바람 각도")
         self.show_slope_check = QCheckBox("기울기 선")
+        self.capture_exclude_check = QCheckBox("윈도우 캡처/녹화 제외")
 
         visible_layout.addWidget(self.show_cup_check)
         visible_layout.addWidget(self.show_grid_check)
         visible_layout.addWidget(self.show_wind_check)
         visible_layout.addWidget(self.show_slope_check)
+        visible_layout.addWidget(self.capture_exclude_check)
 
         overlay_root.addWidget(visible_group)
 
@@ -1281,7 +1545,8 @@ class PangyaControlWindow(QWidget):
         overlay_root.addStretch(1)
 
         self.build_calculator_tab(calc_root)
-
+        self.build_wind_angle_tab(wind_angle_root)
+        self.build_bounding_tab(bounding_root)
 
     def build_calculator_tab(self, root):
         if calc_shot is None:
@@ -1465,6 +1730,48 @@ class PangyaControlWindow(QWidget):
         root.addStretch(1)
 
         self.load_calculator_settings_to_ui(load_calculator_settings())
+
+    def build_wind_angle_tab(self, root):
+        if PangyaWindAnglePanel is None:
+            warn = QLabel("pangya_wind_angle_panel.py를 불러오지 못했습니다.")
+            warn.setWordWrap(True)
+            root.addWidget(warn)
+            return
+
+        self.wind_angle_panel = PangyaWindAnglePanel(
+            get_window_rect_func=self.overlay.get_current_window_rect,
+            on_apply_degree=self.apply_wind_degree_to_calculator,
+            parent=self,
+        )
+
+        root.addWidget(self.wind_angle_panel)
+
+    def build_bounding_tab(self, root):
+        if PangyaBoundingPanel is None:
+            warn = QLabel("pangya_bounding_panel.py를 불러오지 못했습니다.")
+            warn.setWordWrap(True)
+            root.addWidget(warn)
+            return
+
+        self.bounding_panel = PangyaBoundingPanel(parent=self)
+        root.addWidget(self.bounding_panel)
+        
+    def apply_wind_degree_to_calculator(self, degree):
+        if not hasattr(self, "calc_degree_edit"):
+            return
+
+        self.calc_degree_edit.setText(f"{degree:.2f}")
+
+        # 계산기 탭으로 이동
+        if hasattr(self, "tabs"):
+            for i in range(self.tabs.count()):
+                if self.tabs.tabText(i) == "계산기":
+                    self.tabs.setCurrentIndex(i)
+                    break
+
+        # Degree 입력칸으로 포커스 이동 + 값 전체 선택
+        self.calc_degree_edit.setFocus(Qt.OtherFocusReason)
+        self.calc_degree_edit.selectAll()
 
     def create_calc_line(self, default_text=""):
         edit = QLineEdit()
@@ -1839,6 +2146,7 @@ class PangyaControlWindow(QWidget):
 
         self.target_exe_edit.setText(str(s["target_exe"]))
         self.hotkey_edit.setText(str(s["toggle_hotkey"]))
+        self.ui_scale_spin.setValue(float(s.get("ui_scale", 1.0)))
 
         self.base_w_spin.setValue(int(s["base_w"]))
         self.base_h_spin.setValue(int(s["base_h"]))
@@ -1861,10 +2169,14 @@ class PangyaControlWindow(QWidget):
         self.show_grid_check.setChecked(bool(s["show_grid"]))
         self.show_wind_check.setChecked(bool(s["show_wind"]))
         self.show_slope_check.setChecked(bool(s["show_slope"]))
+        self.capture_exclude_check.setChecked(bool(s.get("capture_exclude_enabled", True)))
 
     def collect_settings_from_ui(self):
         settings = normalize_settings({
             "target_exe": self.target_exe_edit.text().strip() or DEFAULT_SETTINGS["target_exe"],
+            
+             # GUI 배율
+            "ui_scale": self.ui_scale_spin.value(),
 
             "base_w": self.base_w_spin.value(),
             "base_h": self.base_h_spin.value(),
@@ -1887,6 +2199,7 @@ class PangyaControlWindow(QWidget):
             "show_grid": self.show_grid_check.isChecked(),
             "show_wind": self.show_wind_check.isChecked(),
             "show_slope": self.show_slope_check.isChecked(),
+            "capture_exclude_enabled": self.capture_exclude_check.isChecked(),
 
             "toggle_hotkey": self.hotkey_edit.text().strip() or DEFAULT_SETTINGS["toggle_hotkey"],
         })
@@ -1902,7 +2215,16 @@ class PangyaControlWindow(QWidget):
             return False
 
         self.settings = self.collect_settings_from_ui()
+
+        # GUI 배율 즉시 적용
+        apply_gui_scale(self.settings)
+
+        # 현재 설정창 레이아웃 재계산
+        self.updateGeometry()
+        self.adjustSize()
+
         self.overlay.set_settings(self.settings)
+        self.apply_control_window_capture_exclude()
         self.register_hotkey_from_settings()
 
         if show_message:
@@ -1915,9 +2237,16 @@ class PangyaControlWindow(QWidget):
             return
 
         self.overlay.start_overlay()
+
+        if self.auto_controller is not None:
+            self.auto_controller.start()
+
         self.update_status()
 
     def on_stop_clicked(self):
+        if self.auto_controller is not None:
+            self.auto_controller.stop()
+
         self.overlay.stop_overlay()
         self.update_status()
 
@@ -1993,8 +2322,17 @@ class PangyaControlWindow(QWidget):
             msg = ctypes.wintypes.MSG.from_address(int(message))
 
             if msg.message == win32con.WM_HOTKEY and msg.wParam == HOTKEY_ID_TOGGLE_OVERLAY:
-                self.apply_settings(show_message=False)
-                self.overlay.toggle_overlay()
+                if not self.apply_settings(show_message=False):
+                    return True, 0
+
+                is_started = self.overlay.toggle_overlay()
+
+                if self.auto_controller is not None:
+                    if is_started:
+                        self.auto_controller.start()
+                    else:
+                        self.auto_controller.stop()
+
                 self.update_status()
                 return True, 0
 
@@ -2005,6 +2343,10 @@ class PangyaControlWindow(QWidget):
 
     def closeEvent(self, event):
         self.unregister_hotkey()
+
+        if self.auto_controller is not None:
+            self.auto_controller.stop()
+
         self.overlay.stop_overlay()
         event.accept()
 
@@ -2017,6 +2359,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     settings = load_settings()
+    apply_gui_scale(settings)
 
     overlay = PangyaOverlay(settings)
     control_window = PangyaControlWindow(overlay, settings)
