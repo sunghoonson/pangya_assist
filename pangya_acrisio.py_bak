@@ -1,0 +1,1801 @@
+"""
+Acrisio smart_calculator.js Python port.
+
+원본 smart_calculator.js의 핵심 계산 흐름을 Python으로 옮긴 파일입니다.
+- 클럽/파워/샷 타입 상수
+- 공 물리 시뮬레이션 QuadTree
+- find_power
+- calc_shot: JS calc()와 유사하게 desvio 보정 반복까지 수행
+
+주의:
+- 게임 클라이언트의 완전한 공식 보증이 아니라, 첨부된 smart_calculator.js 포팅입니다.
+- 원본 JS의 Math.random() 기반 slope line_ball은 Python에서 기본 0.0으로 고정했습니다.
+  slope를 실제로 쓸 때 원본과 100% 동일 비교가 필요하면 line_ball_random=True 또는 line_ball 값을 직접 넣으세요.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from enum import IntEnum
+import math
+import random
+import logging
+from typing import Optional, Union, Dict, Any
+
+
+DESVIO_SCALE_PANGYA_TO_YARD = 0.3125 / 1.5
+
+YARDS_TO_PB = 0.2167
+YARDS_TO_PBA = 0.8668
+YARDS_TO_PBA_PLUS = 1.032
+
+
+logger = logging.getLogger("pangya.bounce")
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
+    logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+
+BOUNCE_DEBUG_LOG_ENABLED = True
+BOUNCE_DEBUG_LOG_ROLL_EVERY = 25
+
+
+def _fmt_vec(v: "Vector3D") -> str:
+    if v is None:
+        return "None"
+    return f"x={v.x:.6f}, y={v.y:.6f}, z={v.z:.6f}, len={v.length():.6f}"
+
+
+def _log_bounce_info(message: str) -> None:
+    if BOUNCE_DEBUG_LOG_ENABLED:
+        logger.info(message)
+
+
+class TypeDistance(IntEnum):
+    LESS_10 = 0
+    LESS_15 = 1
+    LESS_28 = 2
+    LESS_58 = 3
+    BIGGER_OR_EQUAL_58 = 4
+
+
+class PowerShotFactory(IntEnum):
+    NO_POWER_SHOT = 0
+    ONE_POWER_SHOT = 1
+    TWO_POWER_SHOT = 2
+    ITEM_15_POWER_SHOT = 3
+
+
+class ClubType(IntEnum):
+    WOOD = 0
+    IRON = 1
+    PW = 2
+    PT = 3
+
+
+class ShotType(IntEnum):
+    DUNK = 0
+    TOMAHAWK = 1
+    SPIKE = 2
+    COBRA = 3
+
+
+@dataclass
+class Vector3D:
+    x: float
+    y: float
+    z: float
+
+    def clone(self) -> "Vector3D":
+        return Vector3D(self.x, self.y, self.z)
+
+    def length(self) -> float:
+        return math.sqrt(self.x * self.x + self.y * self.y + self.z * self.z)
+
+    def normalize(self) -> "Vector3D":
+        return self.divide_scalar(self.length())
+
+    def multiply_scalar(self, value: float) -> "Vector3D":
+        self.x *= value
+        self.y *= value
+        self.z *= value
+        return self
+
+    def divide_scalar(self, value: float) -> "Vector3D":
+        if value != 0:
+            scalar = 1.0 / value
+            self.x *= scalar
+            self.y *= scalar
+            self.z *= scalar
+        else:
+            self.x = 0.0
+            self.y = 0.0
+            self.z = 0.0
+        return self
+
+    def add(self, other: "Vector3D") -> "Vector3D":
+        self.x += other.x
+        self.y += other.y
+        self.z += other.z
+        return self
+
+    def sub(self, other: "Vector3D") -> "Vector3D":
+        self.x -= other.x
+        self.y -= other.y
+        self.z -= other.z
+        return self
+
+    def cross(self, other: "Vector3D") -> "Vector3D":
+        x, y, z = self.x, self.y, self.z
+        self.x = y * other.z - z * other.y
+        self.y = z * other.x - x * other.z
+        self.z = x * other.y - y * other.x
+        return self
+
+
+def calcule_type_distance(distance: float) -> TypeDistance:
+    if distance >= 58.0:
+        return TypeDistance.BIGGER_OR_EQUAL_58
+    if distance < 10.0:
+        return TypeDistance.LESS_10
+    if distance < 15.0:
+        return TypeDistance.LESS_15
+    if distance < 28.0:
+        return TypeDistance.LESS_28
+    if distance < 58.0:
+        return TypeDistance.LESS_58
+    return TypeDistance.BIGGER_OR_EQUAL_58
+
+
+@dataclass
+class Ball:
+    position: Vector3D = field(default_factory=lambda: Vector3D(0.0, 0.0, 0.0))
+    slope: Vector3D = field(default_factory=lambda: Vector3D(0.0, 1.0, 0.0))
+    state_process: int = 0
+    max_height: float = 0.0
+    max_altura: float = 0.0
+    num_max_height: int = -1
+    count: int = 0
+    velocity: Vector3D = field(default_factory=lambda: Vector3D(0.0, 0.0, 0.0))
+    ball_28: float = 0.0
+    ball_2C: float = 0.0
+    ball_30: float = 0.0
+    ball_3C: float = 0.0
+    ball_40: float = 0.0
+    curva: float = 0.0
+    spin: float = 0.0
+    rotation_curve: float = 0.0
+    rotation_spin: float = 0.0
+    ball_44: int = 0
+    ball_48: int = 0
+    ball_70: int = -1
+    ball_90: int = 0
+    ball_BC: int = 0
+    ball_C4: float = 0.0
+    ball_C8: float = 0.0
+    mass: float = 0.045926999
+    diametro: float = 0.14698039
+
+    def copy_from(self, other: "Ball") -> None:
+        self.position = other.position.clone()
+        self.slope = other.slope.clone()
+        self.velocity = other.velocity.clone()
+        self.state_process = other.state_process
+        self.max_height = other.max_height
+        self.max_altura = other.max_altura
+        self.spin = other.spin
+        self.curva = other.curva
+        self.count = other.count
+        self.num_max_height = other.num_max_height
+        self.ball_28 = other.ball_28
+        self.ball_2C = other.ball_2C
+        self.ball_30 = other.ball_30
+        self.ball_3C = other.ball_3C
+        self.ball_40 = other.ball_40
+        self.ball_44 = other.ball_44
+        self.ball_48 = other.ball_48
+        self.ball_70 = other.ball_70
+        self.ball_90 = other.ball_90
+        self.ball_BC = other.ball_BC
+        self.ball_C4 = other.ball_C4
+        self.ball_C8 = other.ball_C8
+        self.rotation_curve = other.rotation_curve
+        self.rotation_spin = other.rotation_spin
+        self.mass = other.mass
+        self.diametro = other.diametro
+
+
+@dataclass(frozen=True)
+class ClubInfo:
+    type: ClubType
+    rotation_spin: float
+    rotation_curve: float
+    power_factor: float
+    degree: float
+    power_base: float
+
+
+CLUB_INFO: Dict[str, ClubInfo] = {
+    "_1W": ClubInfo(ClubType.WOOD, 0.55, 1.61, 236.0, 10.0, 230.0),
+    "_2W": ClubInfo(ClubType.WOOD, 0.50, 1.41, 204.0, 13.0, 210.0),
+    "_3W": ClubInfo(ClubType.WOOD, 0.45, 1.26, 176.0, 16.0, 190.0),
+    "_2I": ClubInfo(ClubType.IRON, 0.45, 1.07, 161.0, 20.0, 180.0),
+    "_3I": ClubInfo(ClubType.IRON, 0.45, 0.95, 149.0, 24.0, 170.0),
+    "_4I": ClubInfo(ClubType.IRON, 0.45, 0.83, 139.0, 28.0, 160.0),
+    "_5I": ClubInfo(ClubType.IRON, 0.45, 0.73, 131.0, 32.0, 150.0),
+    "_6I": ClubInfo(ClubType.IRON, 0.41, 0.67, 124.0, 36.0, 140.0),
+    "_7I": ClubInfo(ClubType.IRON, 0.36, 0.61, 118.0, 40.0, 130.0),
+    "_8I": ClubInfo(ClubType.IRON, 0.30, 0.57, 114.0, 44.0, 120.0),
+    "_9I": ClubInfo(ClubType.IRON, 0.25, 0.53, 110.0, 48.0, 110.0),
+    "PW": ClubInfo(ClubType.PW, 0.18, 0.49, 107.0, 52.0, 100.0),
+    "SW": ClubInfo(ClubType.PW, 0.17, 0.42, 93.0, 56.0, 80.0),
+    "PT1": ClubInfo(ClubType.PT, 0.00, 0.00, 30.0, 0.00, 20.0),
+    "PT2": ClubInfo(ClubType.PT, 0.00, 0.00, 21.0, 0.00, 10.0),
+}
+
+
+def get_power_shot_factory(ps: Union[int, PowerShotFactory]) -> float:
+    ps = PowerShotFactory(ps)
+    if ps == PowerShotFactory.ONE_POWER_SHOT:
+        return 10.0
+    if ps == PowerShotFactory.TWO_POWER_SHOT:
+        return 20.0
+    if ps == PowerShotFactory.ITEM_15_POWER_SHOT:
+        return 15.0
+    return 0.0
+
+
+@dataclass
+class ExtraPower:
+    auxpart: float = 0.0
+    mascot: float = 4.0
+    card: float = 4.0
+    ps_auxpart: float = 0.0
+    ps_mascot: float = 0.0
+    ps_card: float = 8.0
+
+    def total(self, option: Union[int, PowerShotFactory]) -> float:
+        pwr = self.auxpart + self.mascot + self.card
+        if int(option) in (1, 2, 3):
+            pwr += self.ps_auxpart + self.ps_mascot + self.ps_card
+        return pwr
+
+
+@dataclass
+class PowerPlayer:
+    pwr: float = 31.0
+    options: ExtraPower = field(default_factory=ExtraPower)
+
+
+@dataclass
+class Club:
+    type: ClubType = ClubType.WOOD
+    type_distance: TypeDistance = TypeDistance.BIGGER_OR_EQUAL_58
+    rotation_spin: float = 0.55
+    rotation_curve: float = 1.61
+    power_factor: float = 236.0
+    degree: float = 10.0
+    power_base: float = 230.0
+
+    def init(self, club_info: ClubInfo) -> None:
+        self.type = club_info.type
+        self.rotation_spin = club_info.rotation_spin
+        self.rotation_curve = club_info.rotation_curve
+        self.power_factor = club_info.power_factor
+        self.degree = club_info.degree
+        self.power_base = club_info.power_base
+
+    def get_dreg_rad(self) -> float:
+        return self.degree * math.pi / 180.0
+
+    def get_power(self, extra_power: ExtraPower, pwr_slot: float, ps: PowerShotFactory, spin: float) -> float:
+        pwrjard = 0.0
+
+        if self.type == ClubType.WOOD:
+            pwrjard = extra_power.total(ps) + get_power_shot_factory(ps) + ((pwr_slot - 15.0) * 2.0)
+            pwrjard *= 1.5
+            pwrjard /= self.power_base
+            pwrjard += 1.0
+            pwrjard *= self.power_factor
+
+        elif self.type == ClubType.IRON:
+            pwrjard = ((get_power_shot_factory(ps) / self.power_base + 1.0) * self.power_factor) + (
+                extra_power.total(ps) * self.power_factor * 1.3
+            ) / self.power_base
+
+        elif self.type == ClubType.PW:
+            def get_power_by_degree(degree: float, spin_value: float) -> float:
+                return 0.5 + ((0.5 * (degree + (spin_value * _00D19B98))) / (56.0 / 180.0 * math.pi))
+
+            if self.type_distance in (TypeDistance.LESS_10, TypeDistance.LESS_15, TypeDistance.LESS_28):
+                pwrjard = (get_power_by_degree(self.get_dreg_rad(), spin) * (52.0 + (28.0 if ps else 0.0))) + (
+                    extra_power.total(ps) * self.power_factor
+                ) / self.power_base
+            elif self.type_distance == TypeDistance.LESS_58:
+                pwrjard = (get_power_by_degree(self.get_dreg_rad(), spin) * (80.0 + (18.0 if ps else 0.0))) + (
+                    extra_power.total(ps) * self.power_factor
+                ) / self.power_base
+            elif self.type_distance == TypeDistance.BIGGER_OR_EQUAL_58:
+                pwrjard = ((get_power_shot_factory(ps) / self.power_base + 1.0) * self.power_factor) + (
+                    extra_power.total(ps) * self.power_factor
+                ) / self.power_base
+
+        elif self.type == ClubType.PT:
+            pwrjard = self.power_factor
+
+        return pwrjard
+
+    def get_power2(self, extra_power: ExtraPower, pwr_slot: float, ps: PowerShotFactory) -> float:
+        pwrjard = (extra_power.auxpart + extra_power.mascot + extra_power.card) / 2.0 + (pwr_slot - 15.0)
+        if ps:
+            pwrjard += extra_power.ps_card / 2.0
+        pwrjard /= 170.0
+        return pwrjard + 1.5
+
+    def get_range(self, extra_power: ExtraPower, pwr_slot: float, ps: PowerShotFactory) -> float:
+        pwr_range = self.power_base + extra_power.total(ps) + get_power_shot_factory(ps)
+
+        if self.type == ClubType.WOOD:
+            pwr_range += ((pwr_slot - 15.0) * 2.0)
+
+        if self.type == ClubType.PW:
+            if self.type_distance in (TypeDistance.LESS_10, TypeDistance.LESS_15, TypeDistance.LESS_28):
+                pwr_range = 30.0 + (30.0 if ps else 0.0) + extra_power.total(ps)
+            elif self.type_distance == TypeDistance.LESS_58:
+                pwr_range = 60.0 + (20.0 if ps else 0.0) + extra_power.total(ps)
+            elif self.type_distance == TypeDistance.BIGGER_OR_EQUAL_58:
+                pwr_range = self.power_base + extra_power.total(ps) + get_power_shot_factory(ps)
+
+        return pwr_range
+
+
+@dataclass
+class Wind:
+    wind: float = 0.0
+    degree: float = 0.0
+
+    def get_wind(self) -> Vector3D:
+        return Vector3D(
+            self.wind * math.sin(self.degree * math.pi / 180.0) * -1.0,
+            0.0,
+            self.wind * math.cos(self.degree * math.pi / 180.0),
+        )
+
+
+# Original constants
+_00D3D008 = 0.00001
+_00D046A8 = -1.0
+_00D00190 = 0.75
+_00D083A0 = 0.02
+_00D66CF8 = 3.0
+_00D3D028 = 0.00008
+_00D1A888 = 12.566371
+_00D3D210 = 25.132742
+_00CFF040 = 0.1
+_00D66CA0 = 0.5
+_00D16928 = 0.002
+_00D17908 = 0.349065847694874
+_00D19B98 = 0.0698131695389748
+_00D16758 = 0.01
+
+SLOPE_BREAK_TO_CURVE_SLOPE = 0.00875
+_00E42544_VECT_SLOPE = Vector3D(0.0, 0.0, 1.0)
+
+
+@dataclass
+class ShotOptions:
+    distance: float
+    percent_shot: float
+    ground: float
+    mira_rad: float
+    slope_mira_rad: float
+    spin: float
+    curva: float
+    position: Vector3D
+    shot: ShotType
+    ps: PowerShotFactory
+    power: PowerPlayer
+    line_ball: float = 0.0
+
+
+class QuadTree:
+    def __init__(self) -> None:
+        self.ball = Ball()
+        self.club = Club()
+        self.wind = Wind()
+        self.gravity_factor = 1.0
+        self.gravity = 34.295295715332
+        self._21D8_vect = Vector3D(0.0, 0.0, 0.0)
+        self.ball_position_init = Vector3D(0.0, 0.0, 0.0)
+        self.power_range_shot = 0.0
+        self.shot = ShotType.DUNK
+        self.power_factor_shot = 0.0
+        self.percent_shot_sqrt = 0.0
+        self.spike_init = -1
+        self.spike_med = -1
+        self.power_factor = 0.0
+        self.cobra_init = -1
+
+    def get_gravity(self) -> float:
+        return self.gravity * self.gravity_factor
+
+    def init_shot(self, ball: Ball, club: Club, wind: Wind, options: ShotOptions) -> None:
+        self.ball = ball
+        self.club = club
+        self.wind = wind
+        self.shot = options.shot
+        self.spike_init = -1
+        self.spike_med = -1
+        self.cobra_init = -1
+
+        self.ball.position = options.position.clone()
+        self.ball_position_init = options.position.clone()
+        self.club.type_distance = calcule_type_distance(options.distance)
+        self.ball.max_height = self.ball.position.y
+        self.ball.count = 0
+        self.ball.num_max_height = -1
+
+        pwr = self.club.get_power(options.power.options, options.power.pwr, options.ps, options.spin)
+        self.power_range_shot = self.club.get_range(options.power.options, options.power.pwr, options.ps)
+        self.power_factor = pwr
+        pwr *= math.sqrt(options.percent_shot)
+
+        if options.shot in (ShotType.TOMAHAWK, ShotType.SPIKE):
+            pwr *= 1.3
+        else:
+            pwr *= 1.0
+
+        pwr *= math.sqrt(options.ground * 0.01)
+
+        self.power_factor_shot = pwr
+        self.percent_shot_sqrt = math.sqrt(options.percent_shot)
+
+        self.ball.curva = options.curva
+        self.ball.spin = options.spin
+
+        value1 = self.get_values_degree(options.mira_rad + (0.0 - (self.ball.curva * _00D17908)), 1)
+        value2 = self.get_values_degree(
+            self.club.get_dreg_rad()
+            if self.club.type_distance == TypeDistance.BIGGER_OR_EQUAL_58
+            else self.club.get_dreg_rad() + (self.ball.spin * _00D19B98),
+            0,
+        )
+
+        self.ball.curva -= self.get_slope(options.mira_rad - options.slope_mira_rad, options.line_ball)
+        pwr *= (abs(self.ball.curva) * 0.1) + 1.0
+
+        vect_a = Vector3D(value2["neg_sin"], value2["neg_rad"], value2["cos2"])
+        vect_a.multiply_scalar(pwr)
+
+        v1 = Vector3D(value1["cos"], value1["rad"], value1["sin"])
+        v2 = Vector3D(value1["_C"], value1["_10"], value1["_14"])
+        v3 = Vector3D(value1["neg_sin"], value1["neg_rad"], value1["cos2"])
+        v4 = Vector3D(value1["_24"], value1["_28"], value1["_2C"])
+
+        self.ball.velocity.x = v2.x * vect_a.y + vect_a.x * v1.x + v3.x * vect_a.z + v4.x
+        self.ball.velocity.y = v1.y * vect_a.x + v2.y * vect_a.y + v3.y * vect_a.z + v4.y
+        self.ball.velocity.z = v1.z * vect_a.x + v2.z * vect_a.y + v3.z * vect_a.z + v4.z
+
+        self.ball.rotation_curve = self.ball.curva * options.percent_shot
+        self.ball.rotation_spin = (
+            (self.club.get_power2(options.power.options, options.power.pwr, options.ps) * options.percent_shot) * options.percent_shot
+            if self.club.type_distance == TypeDistance.BIGGER_OR_EQUAL_58
+            else 0.0
+        )
+        self.ball.ball_48 = self.ball.ball_44
+
+    def get_values_degree(self, degree: float, option: int = 0) -> Dict[str, float]:
+        obj: Dict[str, float] = {}
+        if option == 0:
+            obj["cos"] = 1.0
+            obj["rad"] = 0.0
+            obj["sin"] = 0.0
+            obj["_C"] = 0.0
+            obj["_10"] = math.cos(degree)
+            obj["_14"] = math.sin(degree) * -1.0
+            obj["neg_sin"] = 0.0
+            obj["neg_rad"] = math.sin(degree)
+            obj["cos2"] = obj["_10"]
+            obj["_24"] = 0.0
+            obj["_28"] = 0.0
+            obj["_2C"] = 0.0
+        elif option == 1:
+            obj["cos"] = math.cos(degree)
+            obj["rad"] = 0.0
+            obj["sin"] = math.sin(degree)
+            obj["_C"] = 0.0
+            obj["_10"] = 1.0
+            obj["_14"] = 0.0
+            obj["neg_sin"] = obj["sin"] * -1.0
+            obj["neg_rad"] = 0.0
+            obj["cos2"] = obj["cos"]
+            obj["_24"] = 0.0
+            obj["_28"] = 0.0
+            obj["_2C"] = 0.0
+        return obj
+
+    def get_slope(self, mira: float, line_ball: float) -> float:
+        def values_degree_to_matrix(value: Dict[str, float]) -> Dict[str, Vector3D]:
+            return {
+                "v1": Vector3D(value["cos"], value["rad"], value["sin"]),
+                "v2": Vector3D(value["_C"], value["_10"], value["_14"]),
+                "v3": Vector3D(value["neg_sin"], value["neg_rad"], value["cos2"]),
+                "v4": Vector3D(value["_24"], value["_28"], value["_2C"]),
+            }
+
+        def apply_matrix(m1: Dict[str, Vector3D], m2: Dict[str, Vector3D]) -> Dict[str, Vector3D]:
+            return {
+                "v1": Vector3D(
+                    m1["v1"].x * m2["v1"].x + m1["v1"].y * m2["v2"].x + m1["v1"].z * m2["v3"].x,
+                    m1["v1"].x * m2["v1"].y + m1["v1"].y * m2["v2"].y + m1["v1"].z * m2["v3"].y,
+                    m1["v1"].x * m2["v1"].z + m1["v1"].y * m2["v2"].z + m1["v1"].z * m2["v3"].z,
+                ),
+                "v2": Vector3D(
+                    m1["v2"].x * m2["v1"].x + m1["v2"].y * m2["v2"].x + m1["v2"].z * m2["v3"].x,
+                    m1["v2"].x * m2["v1"].y + m1["v2"].y * m2["v2"].y + m1["v2"].z * m2["v3"].y,
+                    m1["v2"].x * m2["v1"].z + m1["v2"].y * m2["v2"].z + m1["v2"].z * m2["v3"].z,
+                ),
+                "v3": Vector3D(
+                    m1["v3"].x * m2["v1"].x + m1["v3"].y * m2["v2"].x + m1["v3"].z * m2["v3"].x,
+                    m1["v3"].x * m2["v1"].y + m1["v3"].y * m2["v2"].y + m1["v3"].z * m2["v3"].y,
+                    m1["v3"].x * m2["v1"].z + m1["v3"].y * m2["v2"].z + m1["v3"].z * m2["v3"].z,
+                ),
+                "v4": Vector3D(
+                    m1["v4"].x * m2["v1"].x + m1["v4"].y * m2["v2"].x + m1["v4"].z * m2["v3"].x + m2["v4"].x,
+                    m1["v4"].x * m2["v1"].y + m1["v4"].y * m2["v2"].y + m1["v4"].z * m2["v3"].y + m2["v4"].y,
+                    m1["v4"].x * m2["v1"].z + m1["v4"].y * m2["v2"].z + m1["v4"].z * m2["v3"].z + m2["v4"].z,
+                ),
+            }
+
+        ball_slope_cross_const_vect = self.ball.slope.clone().cross(_00E42544_VECT_SLOPE)
+        slope_matrix = {
+            "v1": ball_slope_cross_const_vect.clone().normalize(),
+            "v2": self.ball.slope.clone(),
+            "v3": ball_slope_cross_const_vect.clone().cross(self.ball.slope).normalize(),
+            "v4": Vector3D(0.0, 0.0, 0.0),
+        }
+
+        value1 = self.get_values_degree(mira * -1.0, 1)
+        value2 = self.get_values_degree(line_ball * -2.0, 1)
+        m1 = apply_matrix(values_degree_to_matrix(value2), slope_matrix)
+        m2 = apply_matrix(m1, values_degree_to_matrix(value1))
+        return m2["v2"].x * _00D66CA0
+
+    def ball_process(self, steptime: float, final: Optional[float] = None) -> None:
+        self.bounce_process(steptime, final)
+
+        if self.shot == ShotType.COBRA and self.cobra_init < 0:
+            if self.percent_shot_sqrt < math.sqrt(0.8):
+                self.percent_shot_sqrt = math.sqrt(0.8)
+
+            if self.ball.count == 0:
+                self.ball.velocity.y = 0.0
+                self.ball.velocity.normalize().multiply_scalar(self.power_factor_shot)
+
+            diff = self.ball.position.clone().sub(self.ball_position_init).length()
+            cobra_init_up = ((self.power_range_shot * self.percent_shot_sqrt) - 100.0) * 3.2
+
+            if diff >= cobra_init_up:
+                power_multiply = 0.0
+                if self.club.type == ClubType.WOOD:
+                    if self.club.power_base == 230.0:
+                        power_multiply = 74.0
+                    elif self.club.power_base == 210.0:
+                        power_multiply = 76.0
+                    elif self.club.power_base == 190.0:
+                        power_multiply = 80.0
+
+                self.cobra_init = self.ball.count
+                self.ball.velocity.normalize().multiply_scalar(power_multiply).multiply_scalar(self.percent_shot_sqrt)
+                self.ball.rotation_spin = 2.5
+        else:
+            if self.spike_init < 0 and self.cobra_init < 0 and self.club.type_distance == TypeDistance.BIGGER_OR_EQUAL_58:
+                self.ball.rotation_spin -= ((_00D66CA0 - (self.ball.spin * _00CFF040)) * _00D083A0)
+            elif (self.shot == ShotType.SPIKE and self.spike_init >= 0) or (self.shot == ShotType.COBRA and self.cobra_init >= 0):
+                self.ball.rotation_spin -= _00D083A0
+
+            if self.shot == ShotType.SPIKE and self.ball.count == 0:
+                self.ball.velocity.y = 0.0
+                self.ball.velocity.normalize().multiply_scalar(self.power_factor_shot)
+                self.ball.velocity.normalize().multiply_scalar(72.5).multiply_scalar(self.percent_shot_sqrt * 2.0)
+                self.ball.rotation_spin = 3.1
+                self.spike_init = self.ball.count
+
+            if self.shot == ShotType.SPIKE and self.ball.num_max_height >= 0 and (self.ball.num_max_height + 0x3C) < self.ball.count and self.spike_med < 0:
+                self.spike_med = self.ball.count
+                if self.club.type == ClubType.WOOD:
+                    new_power = 0.0
+                    if self.club.power_base == 230.0:
+                        new_power = 344.0
+                        if (self.power_factor * self.percent_shot_sqrt) < 344.0:
+                            new_power -= (self.power_factor * self.percent_shot_sqrt)
+                        else:
+                            new_power = 0.0
+                        new_power = new_power / 112.0 * 21.5
+                        new_power = -8.0 - new_power
+                        self.ball.velocity.y = new_power
+                    elif self.club.power_base == 210.0:
+                        new_power = 306.0
+                        if (self.power_factor * self.percent_shot_sqrt) < 306.0:
+                            new_power -= (self.power_factor * self.percent_shot_sqrt)
+                        else:
+                            new_power = 0.0
+                        new_power = new_power / 105.0 * 20.5
+                        new_power = -10.3 - new_power
+                        self.ball.velocity.y = new_power
+                    elif self.club.power_base == 190.0:
+                        new_power = 273.0
+                        if (self.power_factor * self.percent_shot_sqrt) < 273.0:
+                            new_power -= (self.power_factor * self.percent_shot_sqrt)
+                        else:
+                            new_power = 0.0
+                        new_power = new_power / 100.0 * 20.2
+                        new_power = -10.8 - new_power
+                        self.ball.velocity.y = new_power
+
+                self.ball.velocity.multiply_scalar(self.percent_shot_sqrt * 7.0)
+                self.ball.rotation_spin = self.ball.spin
+
+        if self.ball.velocity.y < 0.0 and self.ball.num_max_height < 0:
+            self.ball.max_altura = self.ball.position.y
+            self.ball.num_max_height = self.ball.count
+
+        self.ball.count += 1
+
+    def bounce_process(self, steptime: float, final: Optional[float] = None) -> None:
+        if self.shot == ShotType.SPIKE and self.ball.num_max_height >= 0 and (self.ball.num_max_height + 0x3C) > self.ball.count:
+            return
+
+        accell_vect = self.apply_force()
+        other_vect = accell_vect.clone().divide_scalar(self.ball.mass).multiply_scalar(steptime)
+        self.ball.velocity.add(other_vect)
+
+        if self.ball.num_max_height == -1:
+            tmp_vect = self._21D8_vect.clone().divide_scalar(self.ball.mass).multiply_scalar(steptime)
+            self.ball.velocity.add(tmp_vect)
+
+        self.ball.ball_2C += self.ball.rotation_curve * _00D1A888 * steptime
+        self.ball.ball_30 += self.ball.rotation_spin * _00D3D210 * steptime
+        self.ball.position.add(self.ball.velocity.clone().multiply_scalar(final if final is not None else steptime))
+
+    def apply_force(self) -> Vector3D:
+        ret_vect = Vector3D(0.0, 0.0, 0.0)
+
+        if self.ball.rotation_curve != 0.0:
+            vectorb = Vector3D(self.ball.velocity.z * _00D046A8, 0.0, self.ball.velocity.x)
+            vectorb.normalize()
+            # 원본 조건은 OR입니다. spike_init/cobra_init 초기 상태에서는 대부분 true입니다.
+            if self.cobra_init < 0 or self.spike_init < 0:
+                vectorb.multiply_scalar(_00D00190 * self.ball.rotation_curve * self.club.rotation_curve)
+            ret_vect.add(vectorb)
+
+        if self.shot == ShotType.SPIKE and self.spike_init < 0:
+            return Vector3D(0.0, 0.0, 0.0)
+        if self.shot == ShotType.COBRA and self.cobra_init < 0:
+            return ret_vect
+
+        wind_vect = self.wind.get_wind()
+        wind_vect.multiply_scalar(_00D16758 if self.shot == ShotType.SPIKE else _00D083A0)
+        ret_vect.add(wind_vect)
+
+        ret_vect.y = ret_vect.y - (self.get_gravity() * self.ball.mass)
+
+        if self.ball.rotation_spin != 0.0:
+            ret_vect.y = ret_vect.y + (self.club.rotation_spin * _00D66CF8 * self.ball.rotation_spin)
+
+        vel_vect = self.ball.velocity.clone()
+        vel_vect.multiply_scalar(vel_vect.length() * _00D3D028)
+        ret_vect.sub(vel_vect)
+        return ret_vect
+
+
+@dataclass
+class SmartData:
+    desvio: float
+    altura: float
+    club: Club
+    options: ShotOptions
+    wind: Optional[Wind] = None
+    ball_slope: Optional[Vector3D] = None
+
+
+@dataclass
+class FoundResult:
+    power: float = -1.0
+    desvio: float = 0.0
+    power_range: float = 0.0
+    smart_data: Optional[SmartData] = None
+    final_ball: Optional[Ball] = None
+    iterations: int = 0
+
+    @property
+    def ok(self) -> bool:
+        return self.power != -1.0
+
+
+def make_slope(value: Union[float, str, Vector3D]) -> Union[float, Vector3D]:
+    if isinstance(value, Vector3D):
+        return value
+    if isinstance(value, str):
+        value = value.strip()
+        if value == "":
+            return 0.0
+        parts = [p.strip() for p in value.split(",")]
+        if len(parts) == 3:
+            return Vector3D(
+                float(parts[0]) * SLOPE_BREAK_TO_CURVE_SLOPE,
+                float(parts[1]) * math.pi / 180.0,
+                float(parts[2]) * SLOPE_BREAK_TO_CURVE_SLOPE,
+            )
+        return float(value)
+    return float(value)
+
+
+def find_power(
+    power_player: PowerPlayer,
+    club_info: ClubInfo,
+    shot: ShotType,
+    power_shot: PowerShotFactory,
+    distancia: float,
+    altura: float,
+    vento: float,
+    angulo: float,
+    terreno: float,
+    spin: float,
+    curva: float,
+    slope: Union[float, Vector3D] = 0.0,
+    mira: Optional[float] = None,
+    percent: Optional[float] = None,
+    *,
+    line_ball: float = 0.0,
+    line_ball_random: bool = False,
+) -> FoundResult:
+    altura_colision = altura * 1.094 * 3.2
+    distancia_scale = distancia * 3.2
+    vball = Ball()
+    vclub = Club()
+    vclub.init(club_info)
+    vclub.type_distance = calcule_type_distance(distancia)
+
+    slope_mira_rad = 0.0
+    slope = make_slope(slope)
+
+    if isinstance(slope, Vector3D):
+        slope_mira_rad = slope.y
+        vball.slope = slope.clone()
+        vball.slope.y = 1.0
+    else:
+        vball.slope = Vector3D(float(slope) * SLOPE_BREAK_TO_CURVE_SLOPE * -1.0, 1.0, 0.0)
+
+    margin = 0.05
+    limit_checking = 1000
+    count = 0
+    is_find = False
+    found = FoundResult()
+
+    wind = Wind(vento, angulo)
+    options = ShotOptions(
+        distance=distancia,
+        percent_shot=percent if percent is not None else 1.0,
+        ground=terreno if terreno != 0.0 else 100.0,
+        mira_rad=mira if mira is not None else 0.0,
+        slope_mira_rad=slope_mira_rad,
+        spin=spin / 30.0,
+        curva=curva / 30.0,
+        position=Vector3D(0.0, 0.0, 0.0),
+        shot=shot,
+        ps=power_shot,
+        power=power_player,
+        line_ball=random.random() if line_ball_random else line_ball,
+    )
+
+    power_range = vclub.get_range(options.power.options, options.power.pwr, options.ps)
+
+    def find_altura_colision(qt: QuadTree, altura_target: float) -> float:
+        nonlocal vball
+        local_count = 0
+        copy_ball = Ball()
+
+        while True:
+            copy_ball.copy_from(vball)
+            qt.ball_process(_00D083A0)
+            local_count += 1
+            if not ((vball.position.y > altura_target or vball.num_max_height == -1) and local_count < 3000):
+                break
+
+        denom = vball.position.y - copy_ball.position.y
+        last_step = 0.0 if denom == 0 else abs((altura_target - copy_ball.position.y) / denom)
+        vball.copy_from(copy_ball)
+        qt.ball_process(_00D083A0, _00D083A0 * last_step)
+
+        if abs(distancia_scale - vball.position.z) <= margin:
+            return 0.0
+        return distancia_scale - vball.position.z
+
+    qt = QuadTree()
+    lado = 0
+    feed = 0.00006
+    ret = 0.0
+
+    while not is_find and count < limit_checking:
+        if options.percent_shot > 1.3:
+            options.percent_shot = 1.3
+        elif options.percent_shot < 0.0:
+            options.percent_shot = 0.1
+
+        qt.init_shot(vball, vclub, wind, options)
+        ret = find_altura_colision(qt, altura_colision)
+
+        if ret == 0.0:
+            is_find = True
+        else:
+            if options.percent_shot == 1.3 and ret > 0.0:
+                break
+            if options.percent_shot == 0.1 and ret < 0.0:
+                break
+
+            if lado == 0:
+                lado = -1 if ret < 0.0 else 1
+            elif (ret < 0.0 and lado == 1) or (ret > 0.0 and lado == -1):
+                feed *= 0.5
+
+            options.percent_shot += ret * feed
+
+        count += 1
+
+    if is_find:
+        found.power = options.percent_shot
+        found.desvio = (vball.position.x + (options.position.x + (math.tan(options.mira_rad) * distancia_scale))) * DESVIO_SCALE_PANGYA_TO_YARD
+        found.power_range = power_range
+        found.smart_data = SmartData(found.desvio, altura_colision, vclub, options, wind, vball.slope.clone())
+        found.final_ball = Ball()
+        found.final_ball.copy_from(vball)
+        found.iterations = count
+
+    return found
+
+
+def desvio_by_degree(yards: float, distance: float) -> float:
+    return math.sin(math.atan2(yards * -1.5, distance)) * distance / 1.5
+
+
+def get_resolution_pb_limit(width: float = 800.0, height: float = 600.0) -> float:
+    value = ((480.0 / height * 0.006) * (width / 2.0)) / YARDS_TO_PB
+    return value if value > 0 else 1.0
+
+
+def smart_desvio(smart_data: SmartData, *, max_pb: float = 0.0, resolution_width: float = 800.0, resolution_height: float = 600.0) -> str:
+    if max_pb <= 0.0:
+        max_pb = math.floor(get_resolution_pb_limit(resolution_width, resolution_height) * 10.0) / 10.0
+
+    yards = desvio_by_degree(smart_data.desvio, smart_data.options.distance)
+
+    pb_sample = yards / YARDS_TO_PB
+    if abs(pb_sample) <= max_pb:
+        return f"{pb_sample:.2f}pb"
+
+    pb_sample = yards / YARDS_TO_PBA
+    if abs(pb_sample) <= max_pb:
+        return f"{pb_sample:.2f}pba"
+
+    pb_sample = yards / YARDS_TO_PBA_PLUS
+    if abs(pb_sample) <= max_pb:
+        return f"{pb_sample:.2f}pba+"
+
+    power_range = 230.0
+    temp_club = Club()
+    for club_name in ["SW", "PW", "_9I", "_8I", "_7I", "_6I", "_5I", "_4I", "_3I", "_2I", "_3W", "_2W", "_1W"]:
+        temp_club.init(CLUB_INFO[club_name])
+        power_range = temp_club.get_range(smart_data.options.power.options, smart_data.options.power.pwr, smart_data.options.ps)
+        denom = ((power_range * 3.2 * 1.4 - smart_data.altura) * 0.0625)
+        if denom != 0:
+            pb_sample = (yards / YARDS_TO_PB) / denom
+        if abs(pb_sample) <= max_pb:
+            return f"{pb_sample:.2f}pba{power_range:.0f}"
+
+    return f"{pb_sample:.2f}pba{power_range:.0f}"
+
+
+@dataclass
+class CalcResult:
+    ok: bool
+    power_percent: float = -1.0
+    shot_yards: float = -1.0
+    desvio_yards: float = 0.0
+    pb: float = 0.0
+    real_pb: float = 0.0
+    smart: str = ""
+    raw: Optional[FoundResult] = None
+    aim_iterations: int = 0
+    message: str = ""
+
+
+def calc_shot(
+    *,
+    power: float = 31.0,
+    auxpart_pwr: float = 0.0,
+    card_pwr: float = 4.0,
+    mascot_pwr: float = 4.0,
+    card_ps_pwr: float = 8.0,
+    club: str = "_1W",
+    shot: Union[str, ShotType] = "TOMAHAWK",
+    power_shot: Union[str, PowerShotFactory] = "NO_POWER_SHOT",
+    distance: float,
+    height: float = 0.0,
+    wind: float = 0.0,
+    degree: float = 0.0,
+    ground: float = 100.0,
+    spin: float = 0.0,
+    curve: float = 0.0,
+    slope: Union[float, str, Vector3D] = 0.0,
+    max_aim_iterations: int = 20,
+    line_ball: float = 0.0,
+    line_ball_random: bool = False,
+) -> CalcResult:
+    if club not in CLUB_INFO:
+        raise ValueError(f"Unknown club: {club}. available={list(CLUB_INFO.keys())}")
+
+    shot_type = shot if isinstance(shot, ShotType) else ShotType[str(shot).upper()]
+    ps_type = power_shot if isinstance(power_shot, PowerShotFactory) else PowerShotFactory[str(power_shot).upper()]
+
+    power_player = PowerPlayer(
+        pwr=power,
+        options=ExtraPower(
+            auxpart=auxpart_pwr,
+            mascot=mascot_pwr,
+            card=card_pwr,
+            ps_card=card_ps_pwr,
+        ),
+    )
+
+    found = find_power(
+        power_player,
+        CLUB_INFO[club],
+        shot_type,
+        ps_type,
+        distance,
+        height,
+        wind,
+        degree,
+        ground if ground != 0.0 else 100.0,
+        spin,
+        curve,
+        slope,
+        line_ball=line_ball,
+        line_ball_random=line_ball_random,
+    )
+
+    results = [found]
+    index = 0
+
+    if found.ok:
+        while index < max_aim_iterations:
+            index += 1
+            prev = results[index - 1]
+            next_found = find_power(
+                power_player,
+                CLUB_INFO[club],
+                shot_type,
+                ps_type,
+                distance,
+                height,
+                wind,
+                degree,
+                ground if ground != 0.0 else 100.0,
+                spin,
+                curve,
+                slope,
+                mira=math.atan2(prev.desvio * 1.5, distance),
+                percent=prev.power,
+                line_ball=line_ball,
+                line_ball_random=line_ball_random,
+            )
+            results.append(next_found)
+            if not next_found.ok or not prev.ok or abs(prev.desvio - next_found.desvio) < 0.05:
+                break
+
+    final = results[-1]
+    if final.ok and final.smart_data is not None:
+        pb = desvio_by_degree(final.desvio, distance) / YARDS_TO_PB
+        real_pb = final.desvio / YARDS_TO_PB * -1.0
+        return CalcResult(
+            ok=True,
+            power_percent=final.power * 100.0,
+            shot_yards=final.power_range * final.power,
+            desvio_yards=final.desvio,
+            pb=pb,
+            real_pb=real_pb,
+            smart=smart_desvio(final.smart_data),
+            raw=final,
+            aim_iterations=index,
+            message="ok",
+        )
+
+    return CalcResult(ok=False, raw=final, aim_iterations=index, message="계산 실패: 거리가 닿지 않거나 너무 약한 조건입니다.")
+
+
+def simulate_trajectory_from_result(result: CalcResult, *, step: float = _00D083A0, max_steps: int = 5000) -> list[dict[str, float]]:
+    """
+    calc_shot()의 최종 결과를 기준으로 공 궤적 좌표를 다시 생성한다.
+
+    반환 좌표 단위:
+    - forward_yards: 진행 거리(yard)
+    - height_m: 높이(meter, 게임 내부 고저 변환값을 역변환)
+    - lateral_yards: 조준 보정까지 포함한 좌우 편차(yard 계열)
+    - raw_x/raw_y/raw_z: 게임 내부 시뮬레이션 좌표
+    """
+    if not result.ok or result.raw is None or result.raw.smart_data is None:
+        return []
+
+    smart_data = result.raw.smart_data
+
+    if smart_data.wind is None:
+        return []
+
+    options = smart_data.options
+    target_height = smart_data.altura
+
+    ball = Ball()
+    club = Club()
+    club.init(ClubInfo(
+        type=smart_data.club.type,
+        rotation_spin=smart_data.club.rotation_spin,
+        rotation_curve=smart_data.club.rotation_curve,
+        power_factor=smart_data.club.power_factor,
+        degree=smart_data.club.degree,
+        power_base=smart_data.club.power_base,
+    ))
+    club.type_distance = smart_data.club.type_distance
+
+    # slope는 init_shot()에서 ball.slope를 사용하므로 find_power()에서 확정된 기울기 상태를 복원한다.
+    if smart_data.ball_slope is not None:
+        ball.slope = smart_data.ball_slope.clone()
+
+    # find_power()에서 이미 최종 options.percent_shot, mira_rad가 확정되어 있다.
+    qt = QuadTree()
+    qt.init_shot(ball, club, smart_data.wind, options)
+
+    points: list[dict[str, float]] = []
+
+    def append_point() -> None:
+        forward_yards = ball.position.z / 3.2
+        height_m = ball.position.y / (1.094 * 3.2)
+        lateral_yards = (
+            ball.position.x + math.tan(options.mira_rad) * ball.position.z
+        ) * DESVIO_SCALE_PANGYA_TO_YARD
+
+        points.append({
+            "forward_yards": forward_yards,
+            "height_m": height_m,
+            "lateral_yards": lateral_yards,
+            "raw_x": ball.position.x,
+            "raw_y": ball.position.y,
+            "raw_z": ball.position.z,
+        })
+
+    append_point()
+
+    for _ in range(max_steps):
+        qt.ball_process(step)
+        append_point()
+
+        # 최고점을 지난 뒤 목표 고저 이하로 내려오면 충분히 표시할 궤적이 확보된 상태다.
+        if ball.num_max_height >= 0 and ball.position.y <= target_height:
+            break
+
+    return points
+
+
+# =========================================================
+# Experimental bounce / roll simulation helpers
+# =========================================================
+# 주의:
+# - 아래 함수들은 ProjectG127.exe에서 확인한 bounce/roll 구조를 Python 계산기에 붙이기 위한 1차 실험용입니다.
+# - smart_calculator.js 원본의 공중 궤적 계산과 달리, 지면 material 테이블 값(material_bounce/material_roll)은
+#   아직 런타임에서 직접 덤프하지 않았으므로 기본값 1.0을 사용합니다.
+# - MATERIAL_TYPE_*_FACTOR 값은 exe의 material_type 분기에서 확인한 terrain 계수입니다.
+
+MATERIAL_TYPE_BOUNCE_FACTOR: Dict[int, float] = {
+    0: 0.8,
+    1: 0.8,
+    2: 0.9,
+    3: 0.7,
+    4: 0.8,
+    5: 0.8,
+    6: 0.8,
+    7: 1.0,
+    8: 1.0,
+}
+
+MATERIAL_TYPE_ROLL_FACTOR: Dict[int, float] = {
+    0: 1.3,
+    1: 1.8,
+    2: 1.13,
+    3: 1.5,
+    4: 1.8,
+    5: 1.8,
+    6: 1.8,
+    7: 1.0,
+    8: 1.0,
+}
+
+# material_type 이름 매핑.
+# ProjectG127.exe의 지면 문자열 파서(0x0066C2E2~0x0066C49E)와
+# 현재 지면 표시 switch(0x00530755)를 대조해 확인한 값입니다.
+MATERIAL_TYPE_NAME: Dict[int, str] = {
+    0: "Tee",
+    1: "Fairway",
+    2: "Green",
+    3: "Bunker",
+    4: "Rough",
+    5: "Snow",
+    6: "Road",
+    7: "Ice",
+    8: "Vector",
+    9: "Water",
+    11: "Sand",
+    12: "Special",
+    13: "Booster",
+    14: "OB",
+    15: "FunObj",
+}
+
+MATERIAL_NAME_TO_TYPE: Dict[str, int] = {
+    "tee": 0,
+    "fairway": 1,
+    "green": 2,
+    "bunker": 3,
+    "rough": 4,
+    "snow": 5,
+    "road": 6,
+    "ice": 7,
+    "vector": 8,
+    "water": 9,
+    "sand": 11,
+    "special": 12,
+    "booster": 13,
+    "ob": 14,
+    "funobj": 15,
+}
+
+
+def clamp(value: float, min_value: float, max_value: float) -> float:
+    return max(min_value, min(max_value, value))
+
+
+def vector_dot(a: Vector3D, b: Vector3D) -> float:
+    return a.x * b.x + a.y * b.y + a.z * b.z
+
+
+def vector_add(a: Vector3D, b: Vector3D) -> Vector3D:
+    return Vector3D(a.x + b.x, a.y + b.y, a.z + b.z)
+
+
+def vector_sub(a: Vector3D, b: Vector3D) -> Vector3D:
+    return Vector3D(a.x - b.x, a.y - b.y, a.z - b.z)
+
+
+def vector_mul(a: Vector3D, value: float) -> Vector3D:
+    return Vector3D(a.x * value, a.y * value, a.z * value)
+
+
+def vector_normalized(a: Vector3D, fallback: Optional[Vector3D] = None) -> Vector3D:
+    length = a.length()
+    if length <= 0.0:
+        return fallback.clone() if fallback is not None else Vector3D(0.0, 0.0, 0.0)
+    return Vector3D(a.x / length, a.y / length, a.z / length)
+
+
+def get_material_type_bounce_factor(material_type: int, state_faba: int = 2) -> float:
+    """
+    exe 0x00942970 대응 후보.
+    state_faba가 2 또는 3일 때만 material_type별 terrain bounce 계수를 쓰고,
+    그 외 상태에서는 1.0을 반환하는 구조로 확인됨.
+    """
+    if state_faba not in (2, 3):
+        return 1.0
+    return MATERIAL_TYPE_BOUNCE_FACTOR.get(int(material_type), 0.8)
+
+
+def get_material_type_roll_factor(material_type: int, state_faba: int = 2) -> float:
+    """
+    exe 0x009428E0 대응 후보.
+    state_faba가 2 또는 3일 때만 material_type별 terrain roll 계수를 쓰고,
+    그 외 상태에서는 1.0을 반환하는 구조로 확인됨.
+    """
+    if state_faba not in (2, 3):
+        return 1.0
+    return MATERIAL_TYPE_ROLL_FACTOR.get(int(material_type), 1.8)
+
+
+def get_material_type_name(material_type: int) -> str:
+    return MATERIAL_TYPE_NAME.get(int(material_type), f"Unknown({int(material_type)})")
+
+
+def get_material_type_by_name(name: str, default: int = 1) -> int:
+    return MATERIAL_NAME_TO_TYPE.get(str(name).strip().lower(), default)
+
+
+@dataclass
+class SurfacePhysics:
+    """
+    착지 지면의 bounce/roll 물성값.
+
+    material_bounce:
+        exe material record +0x00 후보. 아직 지면명별 실측 전이면 1.0 사용.
+    material_roll:
+        exe material record +0x04 후보. 아직 지면명별 실측 전이면 1.0 사용.
+    terrain_bounce_factor:
+        exe 0x00942970 반환값. material_type을 모르면 1.0부터 실험.
+    terrain_roll_factor:
+        exe 0x009428E0 반환값. material_type을 모르면 1.0부터 실험.
+    command_bounce:
+        command ID 0x3C bounce 값. 기본 1.0.
+    command_roll:
+        command ID 0x3D roll 값. 기본 1.0.
+    bounce_mix_index:
+        exe의 0x00E10FE8 후보값. tangent_k = 1 - (1 - bounce_k) * (0.3 + 0.1 * index).
+        정확한 런타임 값 미확정이므로 기본 3.0은 실험용이다.
+    """
+    material_bounce: float = 1.0
+    material_roll: float = 1.0
+    terrain_bounce_factor: float = 1.0
+    terrain_roll_factor: float = 1.0
+    command_bounce: float = 1.0
+    command_roll: float = 1.0
+    bounce_mix_index: float = 3.0
+    slope_power: float = 1.0
+    gravity_factor: float = 1.0
+
+    @property
+    def bounce_k(self) -> float:
+        return self.terrain_bounce_factor * self.material_bounce * self.command_bounce
+
+    @property
+    def roll_k_base(self) -> float:
+        return self.terrain_roll_factor * self.material_roll * self.command_roll
+
+    @property
+    def exe_terrain_bounce(self) -> float:
+        # exe 0x00942970 반환값 후보
+        return self.terrain_bounce_factor
+
+    @property
+    def exe_material_record0(self) -> float:
+        # exe 0x0093C3C0 반환값 후보: material record +0x00
+        return self.material_bounce
+
+    @property
+    def exe_object_2094(self) -> float:
+        # exe [object + 0x2094] 후보
+        return self.command_bounce
+
+    @property
+    def exe_terrain_roll(self) -> float:
+        # exe 0x009428E0 반환값 후보
+        return self.terrain_roll_factor
+
+    @property
+    def exe_material_record4(self) -> float:
+        # exe 0x0093C3A0 반환값 후보: material record +0x04
+        return self.material_roll
+
+    @property
+    def exe_object_2090_or_2230(self) -> float:
+        # exe [object + 0x2090] 또는 [object + 0x2230] 후보
+        return self.command_roll
+
+
+@dataclass
+class BounceStep:
+    step: int
+    forward_yards: float
+    height_m: float
+    lateral_yards: float
+    raw_x: float
+    raw_y: float
+    raw_z: float
+    vx: float
+    vy: float
+    vz: float
+    phase: str
+
+
+@dataclass
+class BounceSimulationResult:
+    ok: bool
+    message: str = ""
+    landing_velocity: Optional[Vector3D] = None
+    bounced_velocity: Optional[Vector3D] = None
+    surface: SurfacePhysics = field(default_factory=SurfacePhysics)
+    points: list[BounceStep] = field(default_factory=list)
+
+
+def calc_bounce_velocity(
+    velocity: Vector3D,
+    normal: Vector3D = Vector3D(0.0, 1.0, 0.0),
+    surface: SurfacePhysics = SurfacePhysics(),
+) -> Vector3D:
+    """
+    exe 0x00952352~0x009524BE 및 0x00946B80~0x00946D1B 근처에서 확인한
+    normal/tangent 분해형 bounce 반사 구조의 1차 Python 모델.
+
+    평지 normal=(0,1,0) 기준:
+        new_vx = vx * tangent_k
+        new_vy = -vy * bounce_k
+        new_vz = vz * tangent_k
+    """
+    n = vector_normalized(normal, Vector3D(0.0, 1.0, 0.0))
+    dot = vector_dot(velocity, n)
+
+    normal_rebound = vector_mul(n, -dot)
+    tangent_velocity = vector_add(velocity, normal_rebound)
+
+    bounce_k = surface.bounce_k
+    mix = 0.3 + 0.1 * surface.bounce_mix_index
+    tangent_k = 1.0 - (1.0 - bounce_k) * mix
+
+    return vector_add(
+        vector_mul(tangent_velocity, tangent_k),
+        vector_mul(normal_rebound, bounce_k),
+    )
+
+def calc_bounce_velocity_reflect_scale(
+    velocity: Vector3D,
+    normal: Vector3D = Vector3D(0.0, 1.0, 0.0),
+    surface: SurfacePhysics = SurfacePhysics(),
+    use_object_2094: bool = False,
+) -> Vector3D:
+    """
+    exe 0x00946B80~0x00946D1B 후보에 맞춘 비교용 모델.
+
+    0x0093D930 후보:
+        v_reflect = v - 2n(v·n)
+
+    이후 0x00946C3C / 0x00946C4D 후보:
+        effective = terrain_bounce_factor * material_record0
+
+    일부 다른 후보 루틴에서는 [object+0x2094]도 곱해지므로
+    use_object_2094=True 비교값도 같이 로그로 확인한다.
+    """
+    n = vector_normalized(normal, Vector3D(0.0, 1.0, 0.0))
+    dot = vector_dot(velocity, n)
+
+    reflected = vector_sub(velocity, vector_mul(n, 2.0 * dot))
+
+    effective = surface.terrain_bounce_factor * surface.material_bounce
+    if use_object_2094:
+        effective *= surface.command_bounce
+
+    return vector_mul(reflected, effective)
+
+
+def calc_bounce_candidate_debug_values(
+    velocity: Vector3D,
+    normal: Vector3D = Vector3D(0.0, 1.0, 0.0),
+    surface: SurfacePhysics = SurfacePhysics(),
+) -> Dict[str, Any]:
+    n = vector_normalized(normal, Vector3D(0.0, 1.0, 0.0))
+    dot = vector_dot(velocity, n)
+
+    reflected_unit = vector_sub(velocity, vector_mul(n, 2.0 * dot))
+    mix_velocity = calc_bounce_velocity(velocity, normal, surface)
+    reflect_scale = calc_bounce_velocity_reflect_scale(velocity, normal, surface, use_object_2094=False)
+    reflect_scale_object = calc_bounce_velocity_reflect_scale(velocity, normal, surface, use_object_2094=True)
+
+    reflect_effective = surface.terrain_bounce_factor * surface.material_bounce
+    reflect_object_effective = reflect_effective * surface.command_bounce
+
+    return {
+        "normal": n,
+        "dot": dot,
+        "reflected_unit": reflected_unit,
+        "reflect_effective": reflect_effective,
+        "reflect_object_effective": reflect_object_effective,
+        "mix_velocity": mix_velocity,
+        "reflect_scale": reflect_scale,
+        "reflect_scale_object": reflect_scale_object,
+    }
+
+
+def calc_roll_delta_velocity(
+    velocity: Vector3D,
+    normal: Vector3D = Vector3D(0.0, 1.0, 0.0),
+    surface: SurfacePhysics = SurfacePhysics(),
+    step: float = _00D083A0,
+) -> Vector3D:
+    """
+    exe 0x009461E0 근처에서 확인한 roll 감속/경사 가속 구조의 1차 Python 모델.
+    반환값은 이번 step에서 velocity에 더할 delta velocity.
+    """
+    n = vector_normalized(normal, Vector3D(0.0, 1.0, 0.0))
+    up = Vector3D(0.0, 1.0, 0.0)
+    down = Vector3D(0.0, -1.0, 0.0)
+
+    gravity = surface.gravity_factor * 34.295295715332
+    normal_y = clamp(vector_dot(up, n), -1.0, 1.0)
+    slope_angle = math.acos(normal_y)
+    slope_sin = math.sin(slope_angle)
+
+    # 경사면 아래 방향 후보. 평지면 0벡터가 되므로 fallback 없이 0 처리.
+    downhill = vector_add(vector_mul(n, normal_y), down)
+    downhill = vector_normalized(downhill, Vector3D(0.0, 0.0, 0.0))
+
+    slope_delta = vector_mul(downhill, surface.slope_power * slope_sin * step * gravity)
+
+    speed = velocity.length()
+    if speed <= 0.0:
+        return slope_delta
+
+    brake_dir = vector_normalized(vector_mul(velocity, -1.0), Vector3D(0.0, 0.0, 0.0))
+    roll_amount = surface.roll_k_base * normal_y * step * gravity
+    roll_delta = vector_mul(brake_dir, roll_amount)
+
+    return vector_add(slope_delta, roll_delta)
+
+
+def calc_roll_debug_values(
+    velocity: Vector3D,
+    normal: Vector3D = Vector3D(0.0, 1.0, 0.0),
+    surface: SurfacePhysics = SurfacePhysics(),
+    step: float = _00D083A0,
+) -> Dict[str, Any]:
+    """
+    roll 계산에 사용된 중간값을 로그용으로 계산한다.
+    실제 velocity 변경에는 관여하지 않는다.
+    """
+    n = vector_normalized(normal, Vector3D(0.0, 1.0, 0.0))
+    up = Vector3D(0.0, 1.0, 0.0)
+    down = Vector3D(0.0, -1.0, 0.0)
+
+    gravity = surface.gravity_factor * 34.295295715332
+    normal_y = clamp(vector_dot(up, n), -1.0, 1.0)
+    slope_angle = math.acos(normal_y)
+    slope_sin = math.sin(slope_angle)
+
+    downhill = vector_add(vector_mul(n, normal_y), down)
+    downhill = vector_normalized(downhill, Vector3D(0.0, 0.0, 0.0))
+
+    slope_delta = vector_mul(downhill, surface.slope_power * slope_sin * step * gravity)
+
+    speed = velocity.length()
+    brake_dir = Vector3D(0.0, 0.0, 0.0)
+    roll_amount = 0.0
+    roll_delta = Vector3D(0.0, 0.0, 0.0)
+
+    if speed > 0.0:
+        brake_dir = vector_normalized(vector_mul(velocity, -1.0), Vector3D(0.0, 0.0, 0.0))
+        roll_amount = surface.roll_k_base * normal_y * step * gravity
+        roll_delta = vector_mul(brake_dir, roll_amount)
+
+    return {
+        "normal": n,
+        "gravity": gravity,
+        "normal_y": normal_y,
+        "slope_angle_deg": math.degrees(slope_angle),
+        "slope_sin": slope_sin,
+        "downhill": downhill,
+        "slope_delta": slope_delta,
+        "speed": speed,
+        "brake_dir": brake_dir,
+        "roll_amount": roll_amount,
+        "roll_delta": roll_delta,
+    }
+
+def simulate_bounce_from_result(
+    result: CalcResult,
+    *,
+    surface: SurfacePhysics = SurfacePhysics(),
+    normal: Vector3D = Vector3D(0.0, 1.0, 0.0),
+    step: float = _00D083A0,
+    max_air_steps: int = 500,
+    max_roll_steps: int = 1000,
+    stop_speed: float = 0.05,
+) -> BounceSimulationResult:
+    """
+    calc_shot() 결과의 첫 착지점/착지 직전 속도를 기준으로 1바운드 + 단순 롤을 시뮬레이션한다.
+
+    이번 버전은 계산식을 바꾸지 않고 INFO 로그만 자세히 남긴다.
+    확인 대상:
+    - 착지 직전 position / velocity / rotation_spin / rotation_curve
+    - 바운드 직후 position / velocity / rotation_spin / rotation_curve
+    - 롤 시작 velocity.x/z / roll_amount
+    - 사용 계수 terrain/material/command/bounce_mix_index/normal
+    """
+    if not result.ok or result.raw is None or result.raw.smart_data is None or result.raw.final_ball is None:
+        return BounceSimulationResult(ok=False, message="calc_shot 결과에 final_ball/smart_data가 없습니다.", surface=surface)
+
+    smart_data = result.raw.smart_data
+    if smart_data.wind is None:
+        return BounceSimulationResult(ok=False, message="calc_shot 결과에 wind 정보가 없습니다.", surface=surface)
+
+    options = smart_data.options
+
+    landing_ball = Ball()
+    landing_ball.copy_from(result.raw.final_ball)
+
+    landing_velocity = landing_ball.velocity.clone()
+
+    n = vector_normalized(normal, Vector3D(0.0, 1.0, 0.0))
+    dot = vector_dot(landing_velocity, n)
+    normal_rebound = vector_mul(n, -dot)
+    tangent_velocity = vector_add(landing_velocity, normal_rebound)
+    bounce_k = surface.bounce_k
+    mix = 0.3 + 0.1 * surface.bounce_mix_index
+    tangent_k = 1.0 - (1.0 - bounce_k) * mix
+
+    _log_bounce_info("========== Pangya Bounce Debug ==========")
+    _log_bounce_info(
+        "[BOUNCE/INPUT] "
+        f"shot={getattr(result, 'shot', '-')}, "
+        f"power_percent={getattr(result, 'power_percent', 0.0):.6f}, "
+        f"shot_yards={getattr(result, 'shot_yards', 0.0):.6f}, "
+        f"pb={getattr(result, 'pb', 0.0):.6f}"
+    )
+    _log_bounce_info(
+        "[BOUNCE/COEF] "
+        f"terrain_bounce_factor={surface.terrain_bounce_factor:.6f}, "
+        f"terrain_roll_factor={surface.terrain_roll_factor:.6f}, "
+        f"material_bounce={surface.material_bounce:.6f}, "
+        f"material_roll={surface.material_roll:.6f}, "
+        f"command_bounce={surface.command_bounce:.6f}, "
+        f"command_roll={surface.command_roll:.6f}, "
+        f"bounce_mix_index={surface.bounce_mix_index:.6f}, "
+        f"bounce_k={bounce_k:.6f}, "
+        f"roll_k_base={surface.roll_k_base:.6f}, "
+        f"mix={mix:.6f}, "
+        f"tangent_k={tangent_k:.6f}, "
+        f"normal=({_fmt_vec(n)})"
+    )
+    _log_bounce_info(
+        "[BOUNCE/EXE_MAP] "
+        f"exe_terrain_bounce_00942970={surface.exe_terrain_bounce:.6f}, "
+        f"exe_material_record0_0093C3C0={surface.exe_material_record0:.6f}, "
+        f"exe_object_2094={surface.exe_object_2094:.6f}, "
+        f"exe_effective_bounce_k={surface.bounce_k:.6f}, "
+        f"exe_mix_0xE10FE8={surface.bounce_mix_index:.6f}, "
+        f"exe_mix_formula=0.3+0.1*index={mix:.6f}, "
+        f"exe_tangent_k=1-(1-bounce_k)*mix={tangent_k:.6f}, "
+        f"exe_terrain_roll_009428E0={surface.exe_terrain_roll:.6f}, "
+        f"exe_material_record4_0093C3A0={surface.exe_material_record4:.6f}, "
+        f"exe_object_2090_or_2230={surface.exe_object_2090_or_2230:.6f}, "
+        f"exe_effective_roll_k={surface.roll_k_base:.6f}"
+    )
+    _log_bounce_info(
+        "[LANDING/BEFORE] "
+        f"position=({_fmt_vec(landing_ball.position)}), "
+        f"velocity=({_fmt_vec(landing_velocity)}), "
+        f"rotation_spin={landing_ball.rotation_spin:.6f}, "
+        f"rotation_curve={landing_ball.rotation_curve:.6f}, "
+        f"spin={landing_ball.spin:.6f}, "
+        f"curve={landing_ball.curva:.6f}, "
+        f"normal_dot_velocity={dot:.6f}, "
+        f"normal_rebound=({_fmt_vec(normal_rebound)}), "
+        f"tangent_velocity=({_fmt_vec(tangent_velocity)})"
+    )
+
+    candidate_debug = calc_bounce_candidate_debug_values(landing_velocity, normal, surface)
+    _log_bounce_info(
+        "[BOUNCE/CANDIDATE] "
+        f"mode_mix_00952352=({_fmt_vec(candidate_debug['mix_velocity'])}), "
+        f"mode_reflect_scale_00946B80=({_fmt_vec(candidate_debug['reflect_scale'])}), "
+        f"mode_reflect_scale_with_object_2094=({_fmt_vec(candidate_debug['reflect_scale_object'])}), "
+        f"reflected_before_scale=({_fmt_vec(candidate_debug['reflected_unit'])}), "
+        f"reflect_effective_terrain_x_record0={candidate_debug['reflect_effective']:.6f}, "
+        f"reflect_effective_with_object={candidate_debug['reflect_object_effective']:.6f}"
+    )
+
+    bounced_velocity = calc_bounce_velocity(landing_velocity, normal, surface)
+
+    _log_bounce_info(
+        "[BOUNCE/AFTER] "
+        f"position=({_fmt_vec(landing_ball.position)}), "
+        f"velocity=({_fmt_vec(bounced_velocity)}), "
+        f"rotation_spin={landing_ball.rotation_spin:.6f}, "
+        f"rotation_curve={landing_ball.rotation_curve:.6f}"
+    )
+
+    # QuadTree 내부 상태를 복원한 뒤, 첫 착지점의 공 상태로 덮어쓴다.
+    ball = Ball()
+    club = Club()
+    club.init(ClubInfo(
+        type=smart_data.club.type,
+        rotation_spin=smart_data.club.rotation_spin,
+        rotation_curve=smart_data.club.rotation_curve,
+        power_factor=smart_data.club.power_factor,
+        degree=smart_data.club.degree,
+        power_base=smart_data.club.power_base,
+    ))
+    club.type_distance = smart_data.club.type_distance
+
+    if smart_data.ball_slope is not None:
+        ball.slope = smart_data.ball_slope.clone()
+
+    qt = QuadTree()
+    qt.init_shot(ball, club, smart_data.wind, options)
+    qt.ball.copy_from(landing_ball)
+    qt.ball.velocity = bounced_velocity.clone()
+
+    landing_y = landing_ball.position.y
+    points: list[BounceStep] = []
+
+    def append_point(phase: str, idx: int) -> None:
+        b = qt.ball
+        points.append(BounceStep(
+            step=idx,
+            forward_yards=b.position.z / 3.2,
+            height_m=b.position.y / (1.094 * 3.2),
+            lateral_yards=(b.position.x + math.tan(options.mira_rad) * b.position.z) * DESVIO_SCALE_PANGYA_TO_YARD,
+            raw_x=b.position.x,
+            raw_y=b.position.y,
+            raw_z=b.position.z,
+            vx=b.velocity.x,
+            vy=b.velocity.y,
+            vz=b.velocity.z,
+            phase=phase,
+        ))
+
+    append_point("bounce_start", 0)
+
+    landed_again = False
+    for i in range(1, max_air_steps + 1):
+        qt.ball_process(step)
+        append_point("air_after_bounce", i)
+
+        if i in (1, 2, 3, 5, 10, 20):
+            _log_bounce_info(
+                "[AIR/AFTER_BOUNCE] "
+                f"step={i}, "
+                f"position=({_fmt_vec(qt.ball.position)}), "
+                f"velocity=({_fmt_vec(qt.ball.velocity)}), "
+                f"rotation_spin={qt.ball.rotation_spin:.6f}, "
+                f"rotation_curve={qt.ball.rotation_curve:.6f}"
+            )
+
+        # 바운드 후 다시 원래 착지 높이 이하로 내려오면 공중 구간 종료.
+        if i >= 3 and qt.ball.velocity.y <= 0.0 and qt.ball.position.y <= landing_y:
+            qt.ball.position.y = landing_y
+            landed_again = True
+            append_point("second_landing", i)
+            _log_bounce_info(
+                "[SECOND_LANDING] "
+                f"step={i}, "
+                f"position=({_fmt_vec(qt.ball.position)}), "
+                f"velocity=({_fmt_vec(qt.ball.velocity)}), "
+                f"rotation_spin={qt.ball.rotation_spin:.6f}, "
+                f"rotation_curve={qt.ball.rotation_curve:.6f}"
+            )
+            break
+
+    # 단순 roll: y속도 제거 후 x/z 수평 속도만 감속.
+    if landed_again:
+        qt.ball.velocity.y = 0.0
+        horizontal_velocity = Vector3D(qt.ball.velocity.x, 0.0, qt.ball.velocity.z)
+        roll_debug = calc_roll_debug_values(horizontal_velocity, normal, surface, step)
+        _log_bounce_info(
+            "[ROLL/START] "
+            f"position=({_fmt_vec(qt.ball.position)}), "
+            f"velocity=({_fmt_vec(horizontal_velocity)}), "
+            f"velocity_x={horizontal_velocity.x:.6f}, "
+            f"velocity_z={horizontal_velocity.z:.6f}, "
+            f"roll_amount={roll_debug['roll_amount']:.6f}, "
+            f"normal_y={roll_debug['normal_y']:.6f}, "
+            f"slope_angle_deg={roll_debug['slope_angle_deg']:.6f}, "
+            f"slope_sin={roll_debug['slope_sin']:.6f}, "
+            f"downhill=({_fmt_vec(roll_debug['downhill'])}), "
+            f"slope_delta=({_fmt_vec(roll_debug['slope_delta'])}), "
+            f"roll_delta=({_fmt_vec(roll_debug['roll_delta'])})"
+        )
+
+        for j in range(1, max_roll_steps + 1):
+            horizontal_velocity = Vector3D(qt.ball.velocity.x, 0.0, qt.ball.velocity.z)
+            speed = horizontal_velocity.length()
+            if speed <= stop_speed:
+                qt.ball.velocity.x = 0.0
+                qt.ball.velocity.z = 0.0
+                append_point("roll_stop", j)
+                _log_bounce_info(
+                    "[ROLL/STOP] "
+                    f"step={j}, reason=speed_le_stop_speed, "
+                    f"position=({_fmt_vec(qt.ball.position)}), "
+                    f"speed={speed:.6f}, stop_speed={stop_speed:.6f}"
+                )
+                break
+
+            delta = calc_roll_delta_velocity(horizontal_velocity, normal, surface, step)
+
+            # 감속량이 현재 속도보다 크면 정지 처리.
+            if delta.length() >= speed:
+                qt.ball.velocity.x = 0.0
+                qt.ball.velocity.z = 0.0
+                append_point("roll_stop", j)
+                _log_bounce_info(
+                    "[ROLL/STOP] "
+                    f"step={j}, reason=delta_ge_speed, "
+                    f"position=({_fmt_vec(qt.ball.position)}), "
+                    f"speed={speed:.6f}, delta=({_fmt_vec(delta)})"
+                )
+                break
+
+            qt.ball.velocity.x += delta.x
+            qt.ball.velocity.z += delta.z
+            qt.ball.position.x += qt.ball.velocity.x * step
+            qt.ball.position.z += qt.ball.velocity.z * step
+            qt.ball.position.y = landing_y
+
+            append_point("roll", j)
+
+            if j <= 5 or j % BOUNCE_DEBUG_LOG_ROLL_EVERY == 0:
+                roll_debug = calc_roll_debug_values(horizontal_velocity, normal, surface, step)
+                _log_bounce_info(
+                    "[ROLL/STEP] "
+                    f"step={j}, "
+                    f"position=({_fmt_vec(qt.ball.position)}), "
+                    f"velocity=({_fmt_vec(qt.ball.velocity)}), "
+                    f"prev_horizontal_velocity=({_fmt_vec(horizontal_velocity)}), "
+                    f"delta=({_fmt_vec(delta)}), "
+                    f"roll_amount={roll_debug['roll_amount']:.6f}, "
+                    f"speed_before={speed:.6f}"
+                )
+    else:
+        _log_bounce_info(
+            "[ROLL/SKIP] second_landing을 찾지 못해 roll 계산을 생략했습니다. "
+            f"air_points={len(points)}"
+        )
+
+    last_point = points[-1] if points else None
+    if last_point is not None:
+        _log_bounce_info(
+            "[BOUNCE/SUMMARY] "
+            f"last_phase={last_point.phase}, "
+            f"forward_yards={last_point.forward_yards:.6f}, "
+            f"lateral_yards={last_point.lateral_yards:.6f}, "
+            f"height_m={last_point.height_m:.6f}, "
+            f"points={len(points)}"
+        )
+    _log_bounce_info("========================================")
+
+    return BounceSimulationResult(
+        ok=True,
+        message="ok",
+        landing_velocity=landing_velocity,
+        bounced_velocity=bounced_velocity,
+        surface=surface,
+        points=points,
+    )
+
+
+__all__ = [
+    "Vector3D",
+    "Ball",
+    "ClubInfo",
+    "Club",
+    "Wind",
+    "ExtraPower",
+    "PowerPlayer",
+    "ShotType",
+    "PowerShotFactory",
+    "CLUB_INFO",
+    "find_power",
+    "calc_shot",
+    "desvio_by_degree",
+    "smart_desvio",
+    "CalcResult",
+    "simulate_trajectory_from_result",
+    "SurfacePhysics",
+    "BounceStep",
+    "BounceSimulationResult",
+    "MATERIAL_TYPE_BOUNCE_FACTOR",
+    "MATERIAL_TYPE_ROLL_FACTOR",
+    "MATERIAL_TYPE_NAME",
+    "MATERIAL_NAME_TO_TYPE",
+    "get_material_type_bounce_factor",
+    "get_material_type_roll_factor",
+    "get_material_type_name",
+    "get_material_type_by_name",
+    "calc_bounce_velocity",
+    "calc_roll_delta_velocity",
+    "calc_roll_debug_values",
+    "simulate_bounce_from_result",
+]

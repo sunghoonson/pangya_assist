@@ -1,6 +1,7 @@
 import math
 import cv2
 import numpy as np
+from dataclasses import dataclass
 
 from PySide6.QtCore import Qt, QRect, Signal
 from PySide6.QtGui import QPainter, QPen, QColor, QImage, QFont
@@ -16,6 +17,7 @@ from PySide6.QtWidgets import (
 
 from pangya_capture import ScreenCaptureService
 from pangya_roi_settings import DEFAULT_ROIS
+from pangya_models import RoiRect
 
 
 class WindAngleCanvas(QWidget):
@@ -40,17 +42,28 @@ class WindAngleCanvas(QWidget):
         # 바람 원 중심 보정값
         # +x = 오른쪽, -x = 왼쪽
         # +y = 아래쪽, -y = 위쪽
-        self.center_offset_x = -4
-        self.center_offset_y = 1
+        self.center_offset_x = 0
+        self.center_offset_y = 0
+
+        # 동적 ROI에서 전달받은 이미지 내부 바람 중심 좌표
+        self.custom_center_img_x = None
+        self.custom_center_img_y = None
 
         self.setMinimumSize(320, 320)
         self.setMouseTracking(True)
 
-    def set_image(self, image_bgr):
+    def set_image(self, image_bgr, center_img_pos=None):
         self.image_bgr = image_bgr
         self.wing_points = []
         self.degree = None
         self.direction_point = None
+
+        if center_img_pos is not None:
+            self.custom_center_img_x = float(center_img_pos[0])
+            self.custom_center_img_y = float(center_img_pos[1])
+        else:
+            self.custom_center_img_x = None
+            self.custom_center_img_y = None
 
         rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
         rgb = np.ascontiguousarray(rgb)
@@ -123,6 +136,12 @@ class WindAngleCanvas(QWidget):
         return int(x), int(y)
 
     def get_center_img_pos(self):
+        if self.custom_center_img_x is not None and self.custom_center_img_y is not None:
+            return (
+                self.custom_center_img_x + self.center_offset_x,
+                self.custom_center_img_y + self.center_offset_y,
+            )
+
         img_w = self.qimage.width()
         img_h = self.qimage.height()
 
@@ -317,12 +336,24 @@ class WindAngleCanvas(QWidget):
             elif len(self.wing_points) == 1:
                 painter.drawText(10, 24, "반대쪽 날개 끝 2번 클릭")
 
+@dataclass
+class DynamicWindRoi:
+    name: str
+    x: int
+    y: int
+    w: int
+    h: int
+
+    # 캡처 이미지 내부에서의 실제 바람 중심 좌표
+    center_x: int = 0
+    center_y: int = 0
 
 class PangyaWindAnglePanel(QWidget):
-    def __init__(self, get_window_rect_func, on_apply_degree=None, parent=None):
+    def __init__(self, get_window_rect_func, get_overlay_settings_func=None, on_apply_degree=None, parent=None):
         super().__init__(parent)
 
         self.get_window_rect_func = get_window_rect_func
+        self.get_overlay_settings_func = get_overlay_settings_func
         self.on_apply_degree = on_apply_degree
 
         self.capture = ScreenCaptureService()
@@ -368,6 +399,88 @@ class PangyaWindAnglePanel(QWidget):
         self.canvas.degree_changed.connect(self.on_degree_changed)
         self.invert_check.stateChanged.connect(self.refresh_degree_label)
 
+    def make_dynamic_wind_roi(self, rect):
+        """
+        오버레이 탭의 바람 X/Y/반지름 설정을 기준으로
+        RoiRect(base_x/base_y/base_w/base_h)를 동적으로 만든다.
+
+        주의:
+        ScreenCaptureService.capture_roi()는 roi.base_x/base_y/base_w/base_h를 사용하므로
+        x/y/w/h 필드가 아니라 RoiRect 구조를 반환해야 한다.
+        """
+        if self.get_overlay_settings_func is None:
+            return DEFAULT_ROIS["wind_angle"], None
+
+        settings = self.get_overlay_settings_func()
+
+        if not settings:
+            return DEFAULT_ROIS["wind_angle"], None
+
+        base_w = int(settings.get("base_w", 2048))
+        base_h = int(settings.get("base_h", 1152))
+
+        if base_w <= 0 or base_h <= 0:
+            return DEFAULT_ROIS["wind_angle"], None
+
+        center_base_x = int(float(settings.get("wind_center_base_x", 1952)))
+        center_base_y = int(float(settings.get("wind_center_base_y", 1040)))
+        radius_base = int(float(settings.get("wind_radius", 82)))
+
+        # 숫자/테두리/화살표까지 포함하기 위한 기준 해상도상의 캡처 반지름
+        capture_radius_base = int(radius_base * 1.25)
+
+        base_x = center_base_x - capture_radius_base
+        base_y = center_base_y - capture_radius_base
+        base_roi_w = capture_radius_base * 2
+        base_roi_h = capture_radius_base * 2
+
+        # 기준 해상도 밖으로 나가지 않게 보정
+        if base_x < 0:
+            base_roi_w += base_x
+            base_x = 0
+
+        if base_y < 0:
+            base_roi_h += base_y
+            base_y = 0
+
+        if base_x + base_roi_w > base_w:
+            base_roi_w = base_w - base_x
+
+        if base_y + base_roi_h > base_h:
+            base_roi_h = base_h - base_y
+
+        if base_roi_w <= 10 or base_roi_h <= 10:
+            return DEFAULT_ROIS["wind_angle"], None
+
+        # 캡처 이미지 내부에서 실제 바람 중심이 어디인지 계산
+        # capture_roi()가 base 좌표를 실제 픽셀로 스케일링하므로,
+        # 이미지 내부 중심도 같은 비율로 환산해야 한다.
+        scale_x = rect.width / base_w
+        scale_y = rect.height / base_h
+
+        center_img_x = int((center_base_x - base_x) * scale_x)
+        center_img_y = int((center_base_y - base_y) * scale_y)
+
+        roi = RoiRect(
+            name="wind_angle_dynamic",
+            base_x=base_x,
+            base_y=base_y,
+            base_w=base_roi_w,
+            base_h=base_roi_h,
+        )
+
+        print(
+            f"[INFO] WIND_ANGLE_ROI "
+            f"base=({base_w},{base_h}), "
+            f"client=({rect.width},{rect.height}), "
+            f"center_base=({center_base_x},{center_base_y}), "
+            f"radius_base={radius_base}, "
+            f"roi_base=({base_x},{base_y},{base_roi_w},{base_roi_h}), "
+            f"center_img=({center_img_x},{center_img_y})"
+        )
+
+        return roi, (center_img_x, center_img_y)
+    
     def capture_wind_angle(self):
         rect = self.get_window_rect_func()
 
@@ -380,8 +493,14 @@ class PangyaWindAnglePanel(QWidget):
             return
 
         try:
-            image = self.capture.capture_roi(rect, DEFAULT_ROIS["wind_angle"])
-            self.canvas.set_image(image)
+            roi, center_img_pos = self.make_dynamic_wind_roi(rect)
+
+            settings = self.get_overlay_settings_func() if self.get_overlay_settings_func is not None else {}
+            base_w = int(settings.get("base_w", 2048))
+            base_h = int(settings.get("base_h", 1152))
+
+            image = self.capture.capture_roi(rect, roi, base_w=base_w, base_h=base_h)
+            self.canvas.set_image(image, center_img_pos=center_img_pos)
             self.current_degree = None
             self.refresh_degree_label()
 

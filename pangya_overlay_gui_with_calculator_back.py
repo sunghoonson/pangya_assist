@@ -62,15 +62,40 @@ from PySide6.QtWidgets import (
     QComboBox,
     QPlainTextEdit,
 )
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QPainter, QPen, QColor, QFont
+from PySide6.QtCore import Qt, QTimer, QPointF, QRectF
+from PySide6.QtGui import QPainter, QPen, QColor, QFont, QPainterPath
 
 
 try:
-    from pangya_acrisio import calc_shot
+    # 바운드/롤 실험 함수가 추가된 버전을 우선 사용한다.
+    # 없으면 기존 pangya_acrisio.py로 fallback한다.
+    from pangya_acrisio import (
+        calc_shot,
+        simulate_trajectory_from_result,
+        SurfacePhysics,
+        Vector3D,
+        get_material_type_bounce_factor,
+        get_material_type_roll_factor,
+        get_material_type_name,
+        MATERIAL_TYPE_NAME,
+        simulate_bounce_from_result,
+    )
 except Exception as e:
-    calc_shot = None
-    print(f"[WARN] pangya_acrisio 모듈 로드 실패: {e}")
+    try:
+        from pangya_acrisio import calc_shot, simulate_trajectory_from_result
+    except Exception as e2:
+        calc_shot = None
+        simulate_trajectory_from_result = None
+        print(f"[WARN] pangya_acrisio 모듈 로드 실패: {e2}")
+
+    SurfacePhysics = None
+    Vector3D = None
+    get_material_type_bounce_factor = None
+    get_material_type_roll_factor = None
+    get_material_type_name = None
+    MATERIAL_TYPE_NAME = {}
+    simulate_bounce_from_result = None
+    print(f"[WARN] pangya_acrisio_with_bounce 모듈 로드 실패. 바운드/롤 실험 기능 비활성화: {e}")
 
 # try:
 #     from pangya_auto_controller import PangyaAutoDetectController
@@ -369,6 +394,19 @@ DEFAULT_CALCULATOR_SETTINGS = {
     # 예: 기존 계산기 장판이 PB * 0.2121에 가깝다면 0.2121 사용
     "board_per_pb": "0.2121",
     "smart_divisor": "4",
+
+    # 착지 후 바운드/롤 실험값
+    # 실제 지면명 매핑 전에는 material_type을 바꿔가며 비교한다.
+    "bounce_enabled": False,
+    "bounce_material_type": "2",
+    "bounce_material_bounce": "1.0",
+    "bounce_material_roll": "1.0",
+    "bounce_command_bounce": "1.0",
+    "bounce_command_roll": "1.0",
+    "bounce_mix_index": "3.0",
+    "bounce_normal_x": "0",
+    "bounce_normal_y": "1",
+    "bounce_normal_z": "0",
 }
 
 
@@ -1044,10 +1082,6 @@ class PangyaOverlay(QWidget):
         print(f"CUP_BASE          : x={self.settings['cup_base_x']}, y={self.settings['cup_base_y']}")
         print(f"GRID              : -{grid_half_value:.2f} ~ +{grid_half_value:.2f}")
         print(f"SLOPE             : x={self.settings['slope_center_base_x']}, y={self.settings['slope_center_base_y']}, half={self.settings['slope_line_half_width']}")
-        print(
-            f"WIND              : x={self.settings['wind_center_base_x']}, "
-            f"y={self.settings['wind_center_base_y']}, "
-            f"radius={self.settings['wind_radius']}")
         print("==========================================")
 
     def draw_wind_angle_area(self, painter, scale_x, scale_y):
@@ -1058,16 +1092,7 @@ class PangyaOverlay(QWidget):
         """
         center_x = int(self.settings["wind_center_base_x"] * scale_x)
         center_y = int(self.settings["wind_center_base_y"] * scale_y)
-
-        scale = min(scale_x, scale_y)
-        radius = int(self.settings["wind_radius"] * scale)
-
-        # print(
-        #     f"[INFO] WIND_DRAW center=({center_x},{center_y}), "
-        #     f"base_radius={self.settings['wind_radius']}, "
-        #     f"scale_x={scale_x:.4f}, scale_y={scale_y:.4f}, "
-        #     f"scale={scale:.4f}, draw_radius={radius}"
-        # )
+        radius = int(self.settings["wind_radius"] * scale_x)
 
         if radius <= 0:
             return
@@ -1141,7 +1166,7 @@ class PangyaOverlay(QWidget):
                 # 숫자는 각 사분면별 0 / 30 / 60 / 90만 표시
                 if local_deg in (0, 30, 60, 90):
                     # 원 바깥쪽에 숫자 배치
-                    text_radius = radius + int(WIND_TEXT_RADIUS_OFFSET * scale)
+                    text_radius = radius + WIND_TEXT_RADIUS_OFFSET
 
                     # 접선 방향 벡터
                     tangent_x = -math.sin(rad)
@@ -1150,9 +1175,9 @@ class PangyaOverlay(QWidget):
                     # 0과 90은 같은 축에 몰리므로 접선 방향으로 살짝 벌려줌
                     tangent_offset = 0
                     if local_deg == 0:
-                        tangent_offset = -int(WIND_TEXT_TANGENT_OFFSET * scale)
+                        tangent_offset = -WIND_TEXT_TANGENT_OFFSET
                     elif local_deg == 90:
-                        tangent_offset = int(WIND_TEXT_TANGENT_OFFSET * scale)
+                        tangent_offset = WIND_TEXT_TANGENT_OFFSET
 
                     text_x = (
                         center_x +
@@ -1355,6 +1380,291 @@ class PangyaOverlay(QWidget):
 
         self.draw_calc_result_panel(painter, scale_x, scale_y)
 
+
+# =========================================================
+# 공 궤적 시각화 위젯
+# =========================================================
+
+class ShotTrajectoryCanvas(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.points = []
+        self.bounce_points = []
+        self.summary = "계산 버튼을 누르면 이곳에 공 궤적이 표시됩니다."
+        self.setMinimumHeight(420)
+
+    def set_trajectory(self, points, result=None, bounce_result=None):
+        self.points = points or []
+        self.bounce_points = list(getattr(bounce_result, "points", []) or [])
+
+        if result is not None and getattr(result, "ok", False):
+            summary = (
+                f"Power {result.power_percent:.2f}% / "
+                f"Carry {result.shot_yards:.2f}y / "
+                f"PB {result.pb:.2f} / "
+                f"Desvio {result.desvio_yards:.4f}y / "
+                f"Air Points {len(self.points)}"
+            )
+
+            if self.bounce_points:
+                last = self.bounce_points[-1]
+                summary += (
+                    f" / Bounce+Roll {len(self.bounce_points)} pts"
+                    f" / End {float(last.forward_yards):.2f}y, {float(last.lateral_yards):.2f}y"
+                )
+
+            self.summary = summary
+        else:
+            self.summary = "계산 결과 없음"
+
+        self.update()
+
+    def clear_trajectory(self, message="계산 버튼을 누르면 이곳에 공 궤적이 표시됩니다."):
+        self.points = []
+        self.bounce_points = []
+        self.summary = message
+        self.update()
+
+    def get_point_value(self, point, key):
+        if isinstance(point, dict):
+            return float(point[key])
+        return float(getattr(point, key))
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        painter.fillRect(self.rect(), QColor(24, 24, 24))
+
+        painter.setFont(QFont("Malgun Gothic", 10))
+        painter.setPen(QPen(QColor(235, 235, 235), 1))
+        painter.drawText(16, 24, self.summary)
+
+        if not self.points and not self.bounce_points:
+            painter.setPen(QPen(QColor(180, 180, 180), 1))
+            painter.drawText(self.rect(), Qt.AlignCenter, "표시할 궤적 데이터가 없습니다.")
+            return
+
+        if self.bounce_points:
+            painter.setFont(QFont("Malgun Gothic", 9))
+            painter.setPen(QPen(QColor(70, 190, 255), 3))
+            painter.drawLine(16, 48, 48, 48)
+            painter.setPen(QPen(QColor(235, 235, 235), 1))
+            painter.drawText(56, 53, "기존 공중 궤적")
+
+            painter.setPen(QPen(QColor(255, 190, 70), 3))
+            painter.drawLine(170, 48, 202, 48)
+            painter.setPen(QPen(QColor(235, 235, 235), 1))
+            painter.drawText(210, 53, "바운드/롤 예상")
+
+        # 요약 문구와 그래프 제목이 겹치지 않도록 그래프 시작 위치를 충분히 내린다.
+        margin = 42
+        top_offset = 92 if self.bounce_points else 82
+        gap = 34
+        available_h = self.height() - top_offset - 32
+        plot_h = max(140, int((available_h - gap) / 2))
+        plot_w = max(200, self.width() - margin * 2)
+
+        side_rect = QRectF(margin, top_offset, plot_w, plot_h)
+        top_rect = QRectF(margin, top_offset + plot_h + gap, plot_w, plot_h)
+
+        self.draw_plot(
+            painter,
+            side_rect,
+            title="측면 궤적: 진행거리(y) / 높이(m)",
+            x_key="forward_yards",
+            y_key="height_m",
+            y_zero=True,
+        )
+        self.draw_plot(
+            painter,
+            top_rect,
+            title="상단 궤적: 진행거리(y) / 좌우편차(y)",
+            x_key="forward_yards",
+            y_key="lateral_yards",
+            y_zero=True,
+        )
+
+    def draw_series(self, painter, rect, series, x_key, y_key, line_color, start_color=None, end_color=None, width=2):
+        if not series:
+            return
+
+        xs = [self.get_point_value(p, x_key) for p in self.all_plot_points(x_key, y_key)]
+        ys = [self.get_point_value(p, y_key) for p in self.all_plot_points(x_key, y_key)]
+
+        min_x = min(xs)
+        max_x = max(xs)
+        min_y = min(ys)
+        max_y = max(ys)
+
+        if abs(max_x - min_x) < 0.000001:
+            max_x = min_x + 1.0
+
+        if abs(max_y - min_y) < 0.000001:
+            max_y = min_y + 1.0
+
+        pad_y = (max_y - min_y) * 0.12
+        min_y -= pad_y
+        max_y += pad_y
+
+        def map_x(value):
+            return rect.left() + (value - min_x) / (max_x - min_x) * rect.width()
+
+        def map_y(value):
+            return rect.bottom() - (value - min_y) / (max_y - min_y) * rect.height()
+
+        path = QPainterPath()
+        first = True
+        for p in series:
+            px = map_x(self.get_point_value(p, x_key))
+            py = map_y(self.get_point_value(p, y_key))
+            if first:
+                path.moveTo(px, py)
+                first = False
+            else:
+                path.lineTo(px, py)
+
+        painter.setPen(QPen(line_color, width))
+        painter.drawPath(path)
+
+        start = series[0]
+        end = series[-1]
+
+        if start_color is not None:
+            painter.setPen(QPen(start_color, 6))
+            painter.drawPoint(QPointF(map_x(self.get_point_value(start, x_key)), map_y(self.get_point_value(start, y_key))))
+
+        if end_color is not None:
+            painter.setPen(QPen(end_color, 6))
+            painter.drawPoint(QPointF(map_x(self.get_point_value(end, x_key)), map_y(self.get_point_value(end, y_key))))
+
+    def all_plot_points(self, x_key, y_key):
+        merged = []
+        merged.extend(self.points or [])
+        merged.extend(self.bounce_points or [])
+        return [p for p in merged if p is not None]
+
+    def draw_plot(self, painter, rect, title, x_key, y_key, y_zero=False):
+        painter.setPen(QPen(QColor(230, 230, 230), 1))
+        painter.drawText(int(rect.left()), int(rect.top()) - 8, title)
+
+        painter.setPen(QPen(QColor(95, 95, 95), 1))
+        painter.drawRect(rect)
+
+        all_points = self.all_plot_points(x_key, y_key)
+        if not all_points:
+            return
+
+        xs = [self.get_point_value(p, x_key) for p in all_points]
+        ys = [self.get_point_value(p, y_key) for p in all_points]
+
+        min_x = min(xs)
+        max_x = max(xs)
+        min_y = min(ys)
+        max_y = max(ys)
+
+        if y_zero:
+            min_y = min(min_y, 0.0)
+            max_y = max(max_y, 0.0)
+
+        if abs(max_x - min_x) < 0.000001:
+            max_x = min_x + 1.0
+
+        if abs(max_y - min_y) < 0.000001:
+            max_y = min_y + 1.0
+
+        pad_y = (max_y - min_y) * 0.12
+        min_y -= pad_y
+        max_y += pad_y
+
+        def map_x(value):
+            return rect.left() + (value - min_x) / (max_x - min_x) * rect.width()
+
+        def map_y(value):
+            return rect.bottom() - (value - min_y) / (max_y - min_y) * rect.height()
+
+        # 격자선
+        painter.setPen(QPen(QColor(60, 60, 60), 1))
+        for i in range(1, 5):
+            x = rect.left() + rect.width() * i / 5.0
+            y = rect.top() + rect.height() * i / 5.0
+            painter.drawLine(int(x), int(rect.top()), int(x), int(rect.bottom()))
+            painter.drawLine(int(rect.left()), int(y), int(rect.right()), int(y))
+
+        # 0 기준선
+        if min_y <= 0.0 <= max_y:
+            zero_y = map_y(0.0)
+            painter.setPen(QPen(QColor(130, 130, 130), 1))
+            painter.drawLine(int(rect.left()), int(zero_y), int(rect.right()), int(zero_y))
+
+        def draw_one_series(series, line_color, start_color=None, end_color=None, width=2):
+            if not series:
+                return
+
+            path = QPainterPath()
+            first = True
+            for p in series:
+                px = map_x(self.get_point_value(p, x_key))
+                py = map_y(self.get_point_value(p, y_key))
+                if first:
+                    path.moveTo(px, py)
+                    first = False
+                else:
+                    path.lineTo(px, py)
+
+            painter.setPen(QPen(line_color, width))
+            painter.drawPath(path)
+
+            start = series[0]
+            end = series[-1]
+            if start_color is not None:
+                painter.setPen(QPen(start_color, 6))
+                painter.drawPoint(QPointF(map_x(self.get_point_value(start, x_key)), map_y(self.get_point_value(start, y_key))))
+            if end_color is not None:
+                painter.setPen(QPen(end_color, 6))
+                painter.drawPoint(QPointF(map_x(self.get_point_value(end, x_key)), map_y(self.get_point_value(end, y_key))))
+
+        # 기존 공중 궤적
+        draw_one_series(
+            self.points,
+            QColor(70, 190, 255),
+            QColor(120, 255, 120),
+            QColor(255, 120, 120),
+            2,
+        )
+
+        # 바운드/롤 예상 궤적
+        draw_one_series(
+            self.bounce_points,
+            QColor(255, 190, 70),
+            QColor(255, 230, 120),
+            QColor(255, 120, 80),
+            2,
+        )
+
+        # phase 표시: 2차 착지 / 롤 정지
+        if self.bounce_points:
+            painter.setFont(QFont("Malgun Gothic", 8))
+            for p in self.bounce_points:
+                phase = getattr(p, "phase", "")
+                if phase not in ("second_landing", "roll_stop"):
+                    continue
+
+                px = map_x(self.get_point_value(p, x_key))
+                py = map_y(self.get_point_value(p, y_key))
+                label = "2차착지" if phase == "second_landing" else "롤정지"
+                painter.setPen(QPen(QColor(0, 0, 0), 3))
+                painter.drawText(int(px) + 5, int(py) - 5, label)
+                painter.setPen(QPen(QColor(255, 255, 255), 1))
+                painter.drawText(int(px) + 4, int(py) - 6, label)
+
+        # 축 값
+        painter.setFont(QFont("Malgun Gothic", 8))
+        painter.setPen(QPen(QColor(210, 210, 210), 1))
+        painter.drawText(int(rect.left()), int(rect.bottom()) + 16, f"{min_x:.1f}")
+        painter.drawText(int(rect.right()) - 42, int(rect.bottom()) + 16, f"{max_x:.1f}y")
+        painter.drawText(int(rect.left()) - 38, int(rect.top()) + 10, f"{max_y:.2f}")
+        painter.drawText(int(rect.left()) - 38, int(rect.bottom()), f"{min_y:.2f}")
+
 # =========================================================
 # 설정 GUI 클래스
 # =========================================================
@@ -1370,6 +1680,7 @@ class PangyaControlWindow(QWidget):
         self.last_calc_result = None
         self.last_calc_display = None
         self.last_calc_shot_type = None
+        self.last_bounce_result = None
 
         self.setWindowTitle("Pangya Assist Overlay 설정")
         self.setWindowTitle("Pangya Assist Overlay 설정")
@@ -1407,16 +1718,19 @@ class PangyaControlWindow(QWidget):
 
         self.overlay_tab = QWidget()
         self.calc_tab = QWidget()
+        self.trajectory_tab = QWidget()
         self.wind_angle_tab = QWidget()
         self.bounding_tab = QWidget()
 
         self.tabs.addTab(self.overlay_tab, "오버레이")
         self.tabs.addTab(self.calc_tab, "계산기")
+        self.tabs.addTab(self.trajectory_tab, "공궤적")
         self.tabs.addTab(self.wind_angle_tab, "바람각도")
         self.tabs.addTab(self.bounding_tab, "바운딩")
 
         overlay_root = QVBoxLayout(self.overlay_tab)
         calc_root = QVBoxLayout(self.calc_tab)
+        trajectory_root = QVBoxLayout(self.trajectory_tab)
         wind_angle_root = QVBoxLayout(self.wind_angle_tab)
         bounding_root = QVBoxLayout(self.bounding_tab)
 
@@ -1558,8 +1872,21 @@ class PangyaControlWindow(QWidget):
         overlay_root.addStretch(1)
 
         self.build_calculator_tab(calc_root)
+        self.build_trajectory_tab(trajectory_root)
         self.build_wind_angle_tab(wind_angle_root)
         self.build_bounding_tab(bounding_root)
+
+    def build_trajectory_tab(self, root):
+        desc = QLabel(
+            "계산기 탭에서 계산 버튼을 누르면 이 탭의 공 궤적만 갱신됩니다. "
+            "계산 후 화면이 자동으로 이동하지 않으므로, 필요할 때 공궤적 탭을 눌러 확인하세요. "
+            "위 그래프는 측면 궤적, 아래 그래프는 상단 기준 좌우 휘어짐입니다."
+        )
+        desc.setWordWrap(True)
+        root.addWidget(desc)
+
+        self.trajectory_canvas = ShotTrajectoryCanvas()
+        root.addWidget(self.trajectory_canvas, 1)
 
     def build_calculator_tab(self, root):
         if calc_shot is None:
@@ -1714,6 +2041,81 @@ class PangyaControlWindow(QWidget):
 
         root.addWidget(convert_group)
 
+        bounce_group = QGroupBox("착지 후 바운드 / 롤 실험")
+        bounce_layout = QGridLayout(bounce_group)
+
+        self.bounce_enabled_check = QCheckBox("계산 결과에 1바운드 + 롤 예상값 추가")
+
+        self.bounce_material_type_combo = QComboBox()
+        material_type_items = [
+            (0, "Tee"),
+            (1, "Fairway"),
+            (2, "Green"),
+            (3, "Bunker"),
+            (4, "Rough"),
+            (5, "Snow"),
+            (6, "Road"),
+            (7, "Ice"),
+            (8, "Vector"),
+            (9, "Water"),
+            (11, "Sand"),
+            (12, "Special"),
+            (13, "Booster"),
+            (14, "OB"),
+            (15, "FunObj"),
+        ]
+        for mt, name in material_type_items:
+            self.bounce_material_type_combo.addItem(f"type {mt} - {name}", str(mt))
+        self.set_combo_by_data(self.bounce_material_type_combo, "2")
+
+        self.bounce_material_bounce_edit = self.create_calc_line("1.0")
+        self.bounce_material_roll_edit = self.create_calc_line("1.0")
+        self.bounce_command_bounce_edit = self.create_calc_line("1.0")
+        self.bounce_command_roll_edit = self.create_calc_line("1.0")
+        self.bounce_mix_index_edit = self.create_calc_line("3.0")
+
+        self.bounce_normal_x_edit = self.create_calc_line("0")
+        self.bounce_normal_y_edit = self.create_calc_line("1")
+        self.bounce_normal_z_edit = self.create_calc_line("0")
+
+        row = 0
+        bounce_layout.addWidget(self.bounce_enabled_check, row, 0, 1, 6)
+
+        row += 1
+        bounce_layout.addWidget(QLabel("착지 material type"), row, 0)
+        bounce_layout.addWidget(self.bounce_material_type_combo, row, 1)
+        bounce_layout.addWidget(QLabel("material bounce(+0x00)"), row, 2)
+        bounce_layout.addWidget(self.bounce_material_bounce_edit, row, 3)
+        bounce_layout.addWidget(QLabel("material roll(+0x04)"), row, 4)
+        bounce_layout.addWidget(self.bounce_material_roll_edit, row, 5)
+
+        row += 1
+        bounce_layout.addWidget(QLabel("command bounce"), row, 0)
+        bounce_layout.addWidget(self.bounce_command_bounce_edit, row, 1)
+        bounce_layout.addWidget(QLabel("command roll"), row, 2)
+        bounce_layout.addWidget(self.bounce_command_roll_edit, row, 3)
+        bounce_layout.addWidget(QLabel("mix index"), row, 4)
+        bounce_layout.addWidget(self.bounce_mix_index_edit, row, 5)
+
+        row += 1
+        bounce_layout.addWidget(QLabel("normal x"), row, 0)
+        bounce_layout.addWidget(self.bounce_normal_x_edit, row, 1)
+        bounce_layout.addWidget(QLabel("normal y"), row, 2)
+        bounce_layout.addWidget(self.bounce_normal_y_edit, row, 3)
+        bounce_layout.addWidget(QLabel("normal z"), row, 4)
+        bounce_layout.addWidget(self.bounce_normal_z_edit, row, 5)
+
+        row += 1
+        bounce_help = QLabel(
+            "주의: material type별 terrain 계수는 exe에서 확인된 값이지만, "
+            "type 번호가 그린/페어웨이/러프/벙커 중 무엇인지는 아직 미확정입니다. "
+            "material bounce/roll은 재질 테이블 실측 전이면 1.0으로 두고 type만 바꿔 비교하세요."
+        )
+        bounce_help.setWordWrap(True)
+        bounce_layout.addWidget(bounce_help, row, 0, 1, 6)
+
+        root.addWidget(bounce_group)
+
         button_layout = QHBoxLayout()
         self.calc_btn = QPushButton("계산")
         self.backspin_btn = QPushButton("BackSpin")
@@ -1753,7 +2155,6 @@ class PangyaControlWindow(QWidget):
 
         self.wind_angle_panel = PangyaWindAnglePanel(
             get_window_rect_func=self.overlay.get_current_window_rect,
-            get_overlay_settings_func=self.collect_settings_from_ui,
             on_apply_degree=self.apply_wind_degree_to_calculator,
             parent=self,
         )
@@ -1857,6 +2258,16 @@ class PangyaControlWindow(QWidget):
             "yards_to_pba_plus": self.calc_yards_to_pba_plus_edit.text().strip(),
             "board_per_pb": self.calc_board_per_pb_edit.text().strip(),
             "smart_divisor": self.calc_smart_divisor_edit.text().strip(),
+            "bounce_enabled": self.bounce_enabled_check.isChecked(),
+            "bounce_material_type": self.bounce_material_type_combo.currentData(),
+            "bounce_material_bounce": self.bounce_material_bounce_edit.text().strip(),
+            "bounce_material_roll": self.bounce_material_roll_edit.text().strip(),
+            "bounce_command_bounce": self.bounce_command_bounce_edit.text().strip(),
+            "bounce_command_roll": self.bounce_command_roll_edit.text().strip(),
+            "bounce_mix_index": self.bounce_mix_index_edit.text().strip(),
+            "bounce_normal_x": self.bounce_normal_x_edit.text().strip(),
+            "bounce_normal_y": self.bounce_normal_y_edit.text().strip(),
+            "bounce_normal_z": self.bounce_normal_z_edit.text().strip(),
         })
 
     def load_calculator_settings_to_ui(self, settings):
@@ -1892,6 +2303,17 @@ class PangyaControlWindow(QWidget):
         self.calc_yards_to_pba_plus_edit.setText(str(s["yards_to_pba_plus"]))
         self.calc_board_per_pb_edit.setText(str(s["board_per_pb"]))
         self.calc_smart_divisor_edit.setText(str(s["smart_divisor"]))
+
+        self.bounce_enabled_check.setChecked(bool(s.get("bounce_enabled", False)))
+        self.set_combo_by_data(self.bounce_material_type_combo, str(s.get("bounce_material_type", "7")))
+        self.bounce_material_bounce_edit.setText(str(s.get("bounce_material_bounce", "1.0")))
+        self.bounce_material_roll_edit.setText(str(s.get("bounce_material_roll", "1.0")))
+        self.bounce_command_bounce_edit.setText(str(s.get("bounce_command_bounce", "1.0")))
+        self.bounce_command_roll_edit.setText(str(s.get("bounce_command_roll", "1.0")))
+        self.bounce_mix_index_edit.setText(str(s.get("bounce_mix_index", "3.0")))
+        self.bounce_normal_x_edit.setText(str(s.get("bounce_normal_x", "0")))
+        self.bounce_normal_y_edit.setText(str(s.get("bounce_normal_y", "1")))
+        self.bounce_normal_z_edit.setText(str(s.get("bounce_normal_z", "0")))
 
     def on_calc_save_clicked(self):
         try:
@@ -1933,6 +2355,110 @@ class PangyaControlWindow(QWidget):
         self.last_calc_shot_type = None
         self.update_backspin_button_state()
 
+    def build_bounce_surface_from_ui(self):
+        if SurfacePhysics is None or Vector3D is None:
+            raise RuntimeError("pangya_acrisio_with_bounce.py를 불러오지 못해 바운드/롤 실험을 사용할 수 없습니다.")
+
+        material_type = int(self.bounce_material_type_combo.currentData())
+
+        terrain_bounce_factor = get_material_type_bounce_factor(material_type)
+        terrain_roll_factor = get_material_type_roll_factor(material_type)
+
+        surface = SurfacePhysics(
+            material_bounce=self.read_calc_float(self.bounce_material_bounce_edit, "material bounce", 1.0),
+            material_roll=self.read_calc_float(self.bounce_material_roll_edit, "material roll", 1.0),
+            terrain_bounce_factor=terrain_bounce_factor,
+            terrain_roll_factor=terrain_roll_factor,
+            command_bounce=self.read_calc_float(self.bounce_command_bounce_edit, "command bounce", 1.0),
+            command_roll=self.read_calc_float(self.bounce_command_roll_edit, "command roll", 1.0),
+            bounce_mix_index=self.read_calc_float(self.bounce_mix_index_edit, "mix index", 3.0),
+        )
+
+        normal = Vector3D(
+            self.read_calc_float(self.bounce_normal_x_edit, "normal x", 0.0),
+            self.read_calc_float(self.bounce_normal_y_edit, "normal y", 1.0),
+            self.read_calc_float(self.bounce_normal_z_edit, "normal z", 0.0),
+        )
+
+        return material_type, surface, normal
+
+    def make_bounce_output_lines(self, result):
+        self.last_bounce_result = None
+
+        if not self.bounce_enabled_check.isChecked():
+            return []
+
+        if simulate_bounce_from_result is None:
+            return [
+                "",
+                "바운드/롤 실험",
+                "pangya_acrisio_with_bounce.py를 찾지 못해 바운드/롤 실험을 건너뜁니다.",
+            ]
+
+        material_type, surface, normal = self.build_bounce_surface_from_ui()
+        bounce_result = simulate_bounce_from_result(
+            result,
+            surface=surface,
+            normal=normal,
+        )
+        self.last_bounce_result = bounce_result
+
+        lines = [
+            "",
+            "바운드/롤 실험",
+            f"material type: {material_type} ({get_material_type_name(material_type) if get_material_type_name else '-'})",
+            f"terrain bounce/roll: {surface.terrain_bounce_factor:.3f} / {surface.terrain_roll_factor:.3f}",
+            f"material bounce/roll: {surface.material_bounce:.3f} / {surface.material_roll:.3f}",
+            f"command bounce/roll: {surface.command_bounce:.3f} / {surface.command_roll:.3f}",
+            f"최종 bounce_k: {surface.bounce_k:.3f}",
+            f"최종 roll_k_base: {surface.roll_k_base:.3f}",
+        ]
+
+        if not bounce_result.ok:
+            lines.append(f"실패: {bounce_result.message}")
+            return lines
+
+        if bounce_result.landing_velocity is not None:
+            v = bounce_result.landing_velocity
+            lines.append(f"착지 직전 velocity: x={v.x:.4f}, y={v.y:.4f}, z={v.z:.4f}")
+
+        if bounce_result.bounced_velocity is not None:
+            v = bounce_result.bounced_velocity
+            lines.append(f"바운드 직후 velocity: x={v.x:.4f}, y={v.y:.4f}, z={v.z:.4f}")
+
+        second_landing = None
+        roll_stop = None
+
+        for point in bounce_result.points:
+            if point.phase == "second_landing":
+                second_landing = point
+            elif point.phase == "roll_stop":
+                roll_stop = point
+
+        last_point = bounce_result.points[-1] if bounce_result.points else None
+
+        if second_landing is not None:
+            lines.append(
+                f"2차 착지 예상: forward={second_landing.forward_yards:.3f}y, "
+                f"lateral={second_landing.lateral_yards:.3f}y"
+            )
+
+        if roll_stop is not None:
+            lines.append(
+                f"롤 정지 예상: forward={roll_stop.forward_yards:.3f}y, "
+                f"lateral={roll_stop.lateral_yards:.3f}y"
+            )
+        elif last_point is not None:
+            lines.append(
+                f"마지막 계산점: phase={last_point.phase}, "
+                f"forward={last_point.forward_yards:.3f}y, lateral={last_point.lateral_yards:.3f}y"
+            )
+
+        lines.append(f"시뮬레이션 포인트 수: {len(bounce_result.points)}")
+        lines.append("주의: material +0x00/+0x04 실측 전에는 비교/튜닝용 결과입니다.")
+
+        return lines
+
     def on_calc_clicked(self):
         if calc_shot is None:
             QMessageBox.warning(self, "계산기 오류", "pangya_acrisio.py 모듈을 불러오지 못했습니다.")
@@ -1964,7 +2490,10 @@ class PangyaControlWindow(QWidget):
                 self.last_calc_result = None
                 self.last_calc_display = None
                 self.last_calc_shot_type = None
+                self.last_bounce_result = None
                 self.update_backspin_button_state()
+                if hasattr(self, "trajectory_canvas"):
+                    self.trajectory_canvas.clear_trajectory(result.message)
                 self.calc_result_box.setPlainText(result.message)
                 return
 
@@ -2009,6 +2538,15 @@ class PangyaControlWindow(QWidget):
             self.last_calc_shot_type = self.calc_shot_combo.currentData()
             self.update_backspin_button_state()
 
+            trajectory_points = []
+            if simulate_trajectory_from_result is not None:
+                trajectory_points = simulate_trajectory_from_result(result)
+
+            if hasattr(self, "trajectory_canvas"):
+                self.trajectory_canvas.set_trajectory(trajectory_points, result, None)
+                # 계산 결과는 공궤적 탭에 업데이트만 한다.
+                # 사용자가 계산기 탭에서 결과를 먼저 확인할 수 있도록 자동 탭 이동은 하지 않는다.
+
             output = [                
                 f"권장 파워: {result.power_percent:.1f}%",
                 f"샷 거리: {result.shot_yards:.1f}y",
@@ -2037,6 +2575,12 @@ class PangyaControlWindow(QWidget):
                 f"Distance={self.calc_distance_edit.text()}, Height={self.calc_height_edit.text()}, Wind={self.calc_wind_edit.text()}, Degree={self.calc_degree_edit.text()}",
                 f"Ground={self.calc_ground_edit.text()}, Spin={self.calc_spin_edit.text()}, Curve={self.calc_curve_edit.text()}, Slope={self.calc_slope_edit.text()}",
             ]
+
+            output.extend(self.make_bounce_output_lines(result))
+
+            if hasattr(self, "trajectory_canvas"):
+                self.trajectory_canvas.set_trajectory(trajectory_points, result, self.last_bounce_result)
+
             self.calc_result_box.setPlainText("\n".join(output))
 
         except Exception as e:
