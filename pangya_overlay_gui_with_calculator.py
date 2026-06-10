@@ -1482,7 +1482,7 @@ class PangyaControlWindow(QWidget):
         self.cup_x_spin = self.create_int_spin()
         self.cup_y_spin = self.create_int_spin()
 
-        self.grid_total_spin = self.create_double_spin(0.1, 50.0, 0.1, 1)
+        self.grid_total_spin = self.create_double_spin(0.1, 50.0, 0.1, 2)
         self.grid_step_spin = self.create_double_spin(0.01, 10.0, 0.01, 2)
 
         self.wind_x_spin = self.create_int_spin()
