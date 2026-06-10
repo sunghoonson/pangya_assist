@@ -147,6 +147,7 @@ BASE_H = 1152
 
 DEBUG_LOG_INTERVAL_SEC = 2.0
 TRACK_INTERVAL_MS = 10
+FORCED_CLIENT_LOG_DIR = r"C:\Pangya_US8JP\RELEASE SRV4\@Client EXE\logs"
 
 WIND_ANGLE_STEP = 5
 WIND_TEXT_RADIUS_OFFSET = 18
@@ -366,9 +367,18 @@ DEFAULT_CALCULATOR_SETTINGS = {
     # ProjectG127.exe 메모리에서 남은거리/고저차 자동 입력
     "memory_auto_input": False,
 
-    # pangya_wind_logger.dll live JSON에서 바람세기 자동 입력
+    # pangya_wind_logger.dll live JSON에서 바람세기/각도 자동 입력
     "wind_live_auto_input": False,
     "wind_live_json_path": "",
+
+    # pangya_slope_logger.dll live JSON에서 공기울기 후보 자동 입력/비교 계산
+    # OFF          : 사용 안 함
+    # NORMAL_X     : 후보 A = -normal.x / 0.00875
+    # AXIS_Z_X     : 후보 B = -axis_z.x / 0.00875
+    # BOTH_COMPARE : 후보 A/B 둘 다 계산 결과 출력
+    "slope_live_auto_input": False,
+    "slope_live_json_path": "",
+    "slope_live_mode": "SCALAR_COMPARE",
 
     "mycella_shot_degree": "0",
     "mycella_align_degree": "0",
@@ -1411,6 +1421,19 @@ class PangyaControlWindow(QWidget):
         self.last_wind_live_value = None
         self.last_wind_live_path = None
 
+        self.slope_live_timer = QTimer(self)
+        self.slope_live_timer.timeout.connect(self.update_slope_live_from_file)
+        self.last_slope_live_tick = None
+        self.last_slope_live_path = None
+        self.last_slope_live_candidates = None
+
+        # live JSON은 오버레이 Start/Stop이나 메모리 연결 상태와 독립적으로 감시한다.
+        # 기존 버전은 메모리 중지/Start 순서에 따라 wind/slope timer가 꺼진 채 남는 문제가 있었다.
+        self.live_watchdog_timer = QTimer(self)
+        self.live_watchdog_timer.timeout.connect(self.ensure_live_timers)
+        self.live_watchdog_timer.start(1000)
+        QTimer.singleShot(0, self.ensure_live_timers)
+
         # 숫자 OCR 자동 인식은 현재 보류.
         # 바람각도는 별도 캡처/클릭 방식으로 처리한다.
         # if PangyaAutoDetectController is not None:
@@ -1701,35 +1724,51 @@ class PangyaControlWindow(QWidget):
 
         self.memory_auto_check = QCheckBox("거리/고저차 자동 입력")
         self.wind_live_auto_check = QCheckBox("바람/각도 자동 입력(DLL live)")
+        self.slope_live_auto_check = QCheckBox("기울기 후보 자동 계산(DLL live)")
+        self.slope_live_mode_combo = QComboBox()
+        self.slope_live_mode_combo.addItem("후보 A/B 둘 다 계산", "SCALAR_COMPARE")
+        self.slope_live_mode_combo.addItem("후보 A scalar70을 입력칸에 반영", "SCALAR70")
+        self.slope_live_mode_combo.addItem("후보 B scalar78을 입력칸에 반영", "SCALAR78")
+        self.slope_live_mode_combo.addItem("자동 입력 안 함", "OFF")
         self.memory_connect_btn = QPushButton("메모리 연결")
         self.memory_disconnect_btn = QPushButton("메모리 중지")
         self.memory_status_label = QLabel("상태: 연결 안 됨")
         self.memory_distance_label = QLabel("거리: -")
         self.memory_height_label = QLabel("고저: -")
         self.wind_live_label = QLabel("바람/signed각도: -")
+        self.slope_live_label = QLabel("기울기 후보: -")
         self.wind_live_path_edit = QLineEdit()
         self.wind_live_path_edit.setPlaceholderText("비워두면 ProjectG127.exe 폴더의 logs\\pangya_wind_live.json 자동 탐색")
+        self.slope_live_path_edit = QLineEdit()
+        self.slope_live_path_edit.setPlaceholderText("비워두면 ProjectG127.exe 폴더의 logs\\pangya_slope_live.json 자동 탐색")
 
         self.memory_disconnect_btn.setEnabled(False)
 
         memory_layout.addWidget(self.memory_auto_check, 0, 0)
         memory_layout.addWidget(self.wind_live_auto_check, 0, 1)
-        memory_layout.addWidget(self.memory_connect_btn, 0, 2)
-        memory_layout.addWidget(self.memory_disconnect_btn, 0, 3)
-        memory_layout.addWidget(self.memory_status_label, 0, 4, 1, 2)
+        memory_layout.addWidget(self.slope_live_auto_check, 0, 2)
+        memory_layout.addWidget(self.memory_connect_btn, 0, 3)
+        memory_layout.addWidget(self.memory_disconnect_btn, 0, 4)
+        memory_layout.addWidget(self.memory_status_label, 0, 5)
         memory_layout.addWidget(self.memory_distance_label, 1, 0, 1, 2)
         memory_layout.addWidget(self.memory_height_label, 1, 2, 1, 2)
         memory_layout.addWidget(self.wind_live_label, 1, 4, 1, 2)
-        memory_layout.addWidget(QLabel("바람 live JSON"), 2, 0)
-        memory_layout.addWidget(self.wind_live_path_edit, 2, 1, 1, 5)
+        memory_layout.addWidget(self.slope_live_label, 2, 0, 1, 3)
+        memory_layout.addWidget(QLabel("기울기 모드"), 2, 3)
+        memory_layout.addWidget(self.slope_live_mode_combo, 2, 4, 1, 2)
+        memory_layout.addWidget(QLabel("바람 live JSON"), 3, 0)
+        memory_layout.addWidget(self.wind_live_path_edit, 3, 1, 1, 5)
+        memory_layout.addWidget(QLabel("기울기 live JSON"), 4, 0)
+        memory_layout.addWidget(self.slope_live_path_edit, 4, 1, 1, 5)
 
         memory_help = QLabel(
             "거리/고저차는 기존 ProjectG127.exe 메모리 hook으로 읽고, "
             "바람은 pangya_wind_logger.dll live JSON의 wind를 읽고, 각도는 signed_degree를 읽어 Degree에 반영합니다. "
+            "기울기는 pangya_slope_logger.dll live JSON의 후보 A/B를 읽어 계산 결과를 비교 출력합니다. "
             "관리자 권한으로 실행해야 하며, Cheat Engine 디버거 창은 닫고 사용하세요."
         )
         memory_help.setWordWrap(True)
-        memory_layout.addWidget(memory_help, 3, 0, 1, 6)
+        memory_layout.addWidget(memory_help, 5, 0, 1, 6)
 
         root.addWidget(memory_group)
 
@@ -1894,6 +1933,11 @@ class PangyaControlWindow(QWidget):
         if hasattr(self, "wind_live_auto_check"):
             self.wind_live_auto_check.stateChanged.connect(self.on_wind_live_auto_changed)
 
+        if hasattr(self, "slope_live_auto_check"):
+            self.slope_live_auto_check.stateChanged.connect(self.on_slope_live_auto_changed)
+        if hasattr(self, "slope_live_mode_combo"):
+            self.slope_live_mode_combo.currentIndexChanged.connect(self.on_slope_live_mode_changed)
+
 
     def set_combo_by_data(self, combo, value):
         index = combo.findData(value)
@@ -1923,6 +1967,9 @@ class PangyaControlWindow(QWidget):
             "memory_auto_input": self.memory_auto_check.isChecked() if hasattr(self, "memory_auto_check") else False,
             "wind_live_auto_input": self.wind_live_auto_check.isChecked() if hasattr(self, "wind_live_auto_check") else False,
             "wind_live_json_path": self.wind_live_path_edit.text().strip() if hasattr(self, "wind_live_path_edit") else "",
+            "slope_live_auto_input": self.slope_live_auto_check.isChecked() if hasattr(self, "slope_live_auto_check") else False,
+            "slope_live_json_path": self.slope_live_path_edit.text().strip() if hasattr(self, "slope_live_path_edit") else "",
+            "slope_live_mode": self.slope_live_mode_combo.currentData() if hasattr(self, "slope_live_mode_combo") else "SCALAR_COMPARE",
             "mycella_shot_degree": self.mycella_shot_degree_edit.text().strip(),
             "mycella_align_degree": self.mycella_align_degree_edit.text().strip(),
             "mycella_slope_break": self.mycella_slope_break_edit.text().strip(),
@@ -1962,6 +2009,20 @@ class PangyaControlWindow(QWidget):
             self.wind_live_auto_check.setChecked(bool(s.get("wind_live_auto_input", False)))
         if hasattr(self, "wind_live_path_edit"):
             self.wind_live_path_edit.setText(str(s.get("wind_live_json_path", "")))
+        if hasattr(self, "slope_live_auto_check"):
+            self.slope_live_auto_check.setChecked(bool(s.get("slope_live_auto_input", False)))
+        if hasattr(self, "slope_live_path_edit"):
+            self.slope_live_path_edit.setText(str(s.get("slope_live_json_path", "")))
+        if hasattr(self, "slope_live_mode_combo"):
+            
+            mode = s.get("slope_live_mode", "SCALAR_COMPARE")
+            legacy_map = {
+                "BOTH_COMPARE": "SCALAR_COMPARE",
+                "NORMAL_X": "SCALAR70",
+                "AXIS_Z_X": "SCALAR78",
+            }
+            mode = legacy_map.get(mode, mode)
+            self.set_combo_by_data(self.slope_live_mode_combo, mode)
 
         self.mycella_shot_degree_edit.setText(str(s["mycella_shot_degree"]))
         self.mycella_align_degree_edit.setText(str(s["mycella_align_degree"]))
@@ -2036,16 +2097,71 @@ class PangyaControlWindow(QWidget):
             )
 
 
-    def on_wind_live_auto_changed(self):
-        if hasattr(self, "wind_live_auto_check") and self.wind_live_auto_check.isChecked():
-            if not self.wind_live_timer.isActive():
-                self.wind_live_timer.start(250)
-            self.update_wind_live_from_file()
-        else:
-            if self.wind_live_timer.isActive():
+    def read_json_file_retry(self, path, retries=3, delay_ms=25):
+        """DLL이 JSON을 쓰는 순간 GUI가 읽으면 반쪽 파일이 될 수 있어서 짧게 재시도한다."""
+        last_error = None
+        for _ in range(max(1, retries)):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception as e:
+                last_error = e
+                try:
+                    QApplication.processEvents()
+                except Exception:
+                    pass
+                time.sleep(delay_ms / 1000.0)
+        raise last_error
+
+    def find_existing_live_json_path(self, filename):
+        """수동 경로가 비어 있을 때 확인할 후보 경로들을 순서대로 검사한다."""
+        paths = []
+
+        target_exe = self.target_exe_edit.text().strip() if hasattr(self, "target_exe_edit") else "ProjectG127.exe"
+        exe_path = self.find_process_exe_path(target_exe or "ProjectG127.exe")
+        if exe_path:
+            paths.append(os.path.join(os.path.dirname(exe_path), "logs", filename))
+
+        paths.append(os.path.join(FORCED_CLIENT_LOG_DIR, filename))
+        paths.append(os.path.join(get_app_dir(), "logs", filename))
+
+        # 중복 제거, 존재하는 파일 우선
+        unique = []
+        for path in paths:
+            if path and path not in unique:
+                unique.append(path)
+
+        for path in unique:
+            if os.path.exists(path):
+                return path
+
+        return unique[0] if unique else os.path.join(get_app_dir(), "logs", filename)
+
+    def ensure_live_timers(self):
+        """체크박스가 ON이면 Start 버튼을 누르지 않아도 live JSON 감시를 유지한다."""
+        try:
+            if hasattr(self, "wind_live_auto_check") and self.wind_live_auto_check.isChecked():
+                if not self.wind_live_timer.isActive():
+                    self.wind_live_timer.start(250)
+                self.update_wind_live_from_file()
+            elif hasattr(self, "wind_live_timer") and self.wind_live_timer.isActive():
                 self.wind_live_timer.stop()
+
+            if hasattr(self, "slope_live_auto_check") and self.slope_live_auto_check.isChecked():
+                if not self.slope_live_timer.isActive():
+                    self.slope_live_timer.start(250)
+                self.update_slope_live_from_file()
+            elif hasattr(self, "slope_live_timer") and self.slope_live_timer.isActive():
+                self.slope_live_timer.stop()
+        except Exception as e:
+            print(f"[WARN] live timer watchdog 실패: {e}")
+
+
+    def on_wind_live_auto_changed(self):
+        self.ensure_live_timers()
+        if hasattr(self, "wind_live_auto_check") and not self.wind_live_auto_check.isChecked():
             if hasattr(self, "wind_live_label"):
-                self.wind_live_label.setText("바람/각도: -")
+                self.wind_live_label.setText("바람/signed각도: -")
 
     def find_process_exe_path(self, process_name):
         try:
@@ -2093,8 +2209,7 @@ class PangyaControlWindow(QWidget):
                     self.wind_live_label.setText("바람/각도: live 파일 없음")
                 return
 
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+            data = self.read_json_file_retry(path)
 
             if not data.get("ok", False):
                 if hasattr(self, "wind_live_label"):
@@ -2169,9 +2284,147 @@ class PangyaControlWindow(QWidget):
             if hasattr(self, "wind_live_label"):
                 self.wind_live_label.setText("바람/각도: 읽기 실패")
 
+    def on_slope_live_auto_changed(self):
+        self.ensure_live_timers()
+        if hasattr(self, "slope_live_auto_check") and not self.slope_live_auto_check.isChecked():
+            self.last_slope_live_candidates = None
+            if hasattr(self, "slope_live_label"):
+                self.slope_live_label.setText("기울기 후보: -")
+
+    def on_slope_live_mode_changed(self):
+        if hasattr(self, "slope_live_auto_check") and self.slope_live_auto_check.isChecked():
+            self.update_slope_live_from_file()
+
+    def resolve_slope_live_json_path(self):
+        manual = ""
+        if hasattr(self, "slope_live_path_edit"):
+            manual = self.slope_live_path_edit.text().strip().strip('"')
+
+        if manual:
+            return manual
+
+        target_exe = self.target_exe_edit.text().strip() if hasattr(self, "target_exe_edit") else "ProjectG127.exe"
+        exe_path = self.find_process_exe_path(target_exe or "ProjectG127.exe")
+        if exe_path:
+            return os.path.join(os.path.dirname(exe_path), "logs", "pangya_slope_live.json")
+
+        return os.path.join(get_app_dir(), "logs", "pangya_slope_live.json")
+
+    def _extract_slope_live_candidates(self, data):
+        # 최신 scalar logger JSON 우선
+        scalar = data.get("slope_scalar_candidates", {}) or {}
+        cand_a = scalar.get("scalar70_break", None)
+        cand_b = scalar.get("scalar78_div_00875", None)
+
+        if cand_a is not None:
+            cand_a = float(cand_a)
+        if cand_b is not None:
+            cand_b = float(cand_b)
+
+        # 구버전 matrix logger fallback
+        if cand_a is None or cand_b is None:
+            candidates = data.get("slope_break_candidates", {}) or {}
+            def read_candidate(*names):
+                for name in names:
+                    value = candidates.get(name, None)
+                    if value is not None:
+                        return float(value)
+                return None
+
+            old_a = read_candidate("side_from_normal_x", "side_break_from_normal_x")
+            old_b = read_candidate("side_from_axis_z_x", "side_break_from_axis_z_x")
+            if cand_a is None:
+                cand_a = old_a
+            if cand_b is None:
+                cand_b = old_b
+
+        # 최후 fallback: 참고용 행렬값. 최종 후보로 쓰기엔 부정확하지만 표시만 가능하게 한다.
+        if cand_a is None or cand_b is None:
+            normal = data.get("normal_candidate", {}) or {}
+            axis_z = data.get("axis_z", {}) or {}
+            if cand_a is None and normal.get("x") is not None:
+                cand_a = -float(normal.get("x")) / 0.00875
+            if cand_b is None and axis_z.get("x") is not None:
+                cand_b = -float(axis_z.get("x")) / 0.00875
+
+        return cand_a, cand_b
+
+    def update_slope_live_from_file(self):
+        if not hasattr(self, "slope_live_auto_check") or not self.slope_live_auto_check.isChecked():
+            return
+
+        path = self.resolve_slope_live_json_path()
+        self.last_slope_live_path = path
+
+        try:
+            if not os.path.exists(path):
+                self.last_slope_live_candidates = None
+                if hasattr(self, "slope_live_label"):
+                    self.slope_live_label.setText("기울기 후보: live 파일 없음")
+                return
+
+            data = self.read_json_file_retry(path)
+
+            if not data.get("ok", False):
+                self.last_slope_live_candidates = None
+                if hasattr(self, "slope_live_label"):
+                    self.slope_live_label.setText("기울기 후보: live 값 없음")
+                return
+
+            cand_a, cand_b = self._extract_slope_live_candidates(data)
+            tick = data.get("tick")
+            seq = data.get("seq")
+
+            if cand_a is None and cand_b is None:
+                self.last_slope_live_candidates = None
+                if hasattr(self, "slope_live_label"):
+                    self.slope_live_label.setText("기울기 후보: 후보 필드 없음")
+                return
+
+            self.last_slope_live_candidates = {
+                "A": cand_a,
+                "B": cand_b,
+                "tick": tick,
+                "seq": seq,
+                "path": path,
+            }
+            self.last_slope_live_tick = tick
+
+            mode = self.slope_live_mode_combo.currentData() if hasattr(self, "slope_live_mode_combo") else "SCALAR_COMPARE"
+
+            # 후보 A/B 둘 다 비교 모드에서는 입력칸을 건드리지 않는다.
+            # A 또는 B 고정 모드에서만 Slope break 입력칸에 자동 반영한다.
+            chosen = None
+            if mode in ("SCALAR70", "NORMAL_X"):
+                chosen = cand_a
+            elif mode in ("SCALAR78", "AXIS_Z_X"):
+                chosen = cand_b
+
+            if chosen is not None:
+                new_text = f"{chosen:.4f}"
+                if self.calc_slope_edit.text().strip() != new_text:
+                    self.calc_slope_edit.setText(new_text)
+
+            if hasattr(self, "slope_live_label"):
+                display_path = path
+                if len(display_path) > 65:
+                    display_path = "..." + display_path[-62:]
+
+                a_text = "-" if cand_a is None else f"{cand_a:.4f}"
+                b_text = "-" if cand_b is None else f"{cand_b:.4f}"
+                self.slope_live_label.setText(
+                    f"기울기 후보 A(scalar70): {a_text}  B(scalar78): {b_text}  seq={seq} tick={tick}  {display_path}"
+                )
+
+        except Exception as e:
+            print(f"[WARN] 기울기 live 값 읽기 실패: {e}")
+            self.last_slope_live_candidates = None
+            if hasattr(self, "slope_live_label"):
+                self.slope_live_label.setText("기울기 후보: 읽기 실패")
+
     def stop_memory_probe(self):
-        if self.wind_live_timer.isActive():
-            self.wind_live_timer.stop()
+        # wind/slope live JSON timer는 메모리 hook과 독립적이다.
+        # 여기서 끄면 체크박스는 ON인데 라벨은 '-'로 멈추는 문제가 생긴다.
 
         if self.memory_timer.isActive():
             self.memory_timer.stop()
@@ -2271,35 +2524,6 @@ class PangyaControlWindow(QWidget):
             return
 
         try:
-            result = calc_shot(
-                power=self.read_calc_float(self.calc_power_edit, "Power", 31.0),
-                auxpart_pwr=self.read_calc_float(self.calc_auxpart_edit, "Ring Power", 0.0),
-                card_pwr=self.read_calc_float(self.calc_card_edit, "Card Power", 0.0),
-                mascot_pwr=self.read_calc_float(self.calc_mascot_edit, "Mascot Power", 0.0),
-                card_ps_pwr=self.read_calc_float(self.calc_card_ps_edit, "Card Power Shot Power", 0.0),
-                club=self.calc_club_combo.currentData(),
-                shot=self.calc_shot_combo.currentData(),
-                power_shot=self.calc_power_shot_combo.currentData(),
-                distance=self.read_calc_float(self.calc_distance_edit, "Distance", 0.0),
-                height=self.read_calc_float(self.calc_height_edit, "Height", 0.0),
-                wind=self.read_calc_float(self.calc_wind_edit, "Wind", 0.0),
-                degree=self.read_calc_float(self.calc_degree_edit, "Degree", 0.0),
-                ground=self.read_calc_float(self.calc_ground_edit, "Ground", 100.0),
-                spin=self.read_calc_float(self.calc_spin_edit, "Spin", 0.0),
-                curve=self.read_calc_float(self.calc_curve_edit, "Curve", 0.0),
-                slope=self.calc_slope_edit.text().strip() or "0",
-                line_ball=self.read_calc_float(self.calc_line_ball_edit, "Line ball", 0.0),
-                line_ball_random=self.calc_line_ball_random_check.isChecked(),
-            )
-
-            if not result.ok:
-                self.last_calc_result = None
-                self.last_calc_display = None
-                self.last_calc_shot_type = None
-                self.update_backspin_button_state()
-                self.calc_result_box.setPlainText(result.message)
-                return
-
             yards_to_pb = self.read_calc_float(self.calc_yards_to_pb_edit, "YARDS_TO_PB", 0.2167)
             yards_to_pba = self.read_calc_float(self.calc_yards_to_pba_edit, "YARDS_TO_PBA", 0.8668)
             yards_to_pba_plus = self.read_calc_float(self.calc_yards_to_pba_plus_edit, "YARDS_TO_PBA+", 1.032)
@@ -2309,66 +2533,164 @@ class PangyaControlWindow(QWidget):
             if yards_to_pb == 0 or yards_to_pba == 0 or yards_to_pba_plus == 0 or smart_divisor == 0:
                 raise ValueError("표시 단위 값은 0이 될 수 없습니다.")
 
-            # pangya_acrisio.py의 result.pb/result.real_pb는 원본 JS 기본값 0.2167 기준 결과다.
-            # GUI에서 상수를 조정할 수 있도록, 먼저 다시 yard 단위로 되돌린 뒤 사용자가 입력한 상수로 재환산한다.
-            pb_yards = result.pb * 0.2167
-            real_pb_yards = result.real_pb * 0.2167
+            def run_calc_with_slope(slope_value):
+                return calc_shot(
+                    power=self.read_calc_float(self.calc_power_edit, "Power", 31.0),
+                    auxpart_pwr=self.read_calc_float(self.calc_auxpart_edit, "Ring Power", 0.0),
+                    card_pwr=self.read_calc_float(self.calc_card_edit, "Card Power", 0.0),
+                    mascot_pwr=self.read_calc_float(self.calc_mascot_edit, "Mascot Power", 0.0),
+                    card_ps_pwr=self.read_calc_float(self.calc_card_ps_edit, "Card Power Shot Power", 0.0),
+                    club=self.calc_club_combo.currentData(),
+                    shot=self.calc_shot_combo.currentData(),
+                    power_shot=self.calc_power_shot_combo.currentData(),
+                    distance=self.read_calc_float(self.calc_distance_edit, "Distance", 0.0),
+                    height=self.read_calc_float(self.calc_height_edit, "Height", 0.0),
+                    wind=self.read_calc_float(self.calc_wind_edit, "Wind", 0.0),
+                    degree=self.read_calc_float(self.calc_degree_edit, "Degree", 0.0),
+                    ground=self.read_calc_float(self.calc_ground_edit, "Ground", 100.0),
+                    spin=self.read_calc_float(self.calc_spin_edit, "Spin", 0.0),
+                    curve=self.read_calc_float(self.calc_curve_edit, "Curve", 0.0),
+                    slope=str(slope_value),
+                    line_ball=self.read_calc_float(self.calc_line_ball_edit, "Line ball", 0.0),
+                    line_ball_random=self.calc_line_ball_random_check.isChecked(),
+                )
 
-            custom_pb = pb_yards / yards_to_pb
-            custom_real_pb = real_pb_yards / yards_to_pb
-            custom_pba = pb_yards / yards_to_pba
-            custom_pba_plus = pb_yards / yards_to_pba_plus
+            def build_display(result):
+                # pangya_acrisio.py의 result.pb/result.real_pb는 원본 JS 기본값 0.2167 기준 결과다.
+                pb_yards = result.pb * 0.2167
+                real_pb_yards = result.real_pb * 0.2167
 
-            # 기존 한국어 계산기/오버레이 장판값에 맞추기 위한 표시용 값.
-            # 예: PB=8.41, board_per_pb=0.2121이면 장판=1.784
-            board_cells = abs(result.pb) * board_per_pb
-            smart_cells = board_cells / smart_divisor
+                custom_pb = pb_yards / yards_to_pb
+                custom_real_pb = real_pb_yards / yards_to_pb
+                custom_pba = pb_yards / yards_to_pba
+                custom_pba_plus = pb_yards / yards_to_pba_plus
+
+                board_cells = abs(result.pb) * board_per_pb
+                smart_cells = board_cells / smart_divisor
+
+                return {
+                    "board_cells": board_cells,
+                    "smart_cells": smart_cells,
+                    "board_per_pb": board_per_pb,
+                    "smart_divisor": smart_divisor,
+                    "yards_to_pb": yards_to_pb,
+                    "yards_to_pba": yards_to_pba,
+                    "yards_to_pba_plus": yards_to_pba_plus,
+                    "custom_pb": custom_pb,
+                    "custom_real_pb": custom_real_pb,
+                    "custom_pba": custom_pba,
+                    "custom_pba_plus": custom_pba_plus,
+                }
+
+            def append_result_block(lines, title, result, display, slope_text):
+                lines.append(title)
+                lines.append(f"Slope break: {slope_text}")
+
+                if not result.ok:
+                    lines.append(f"계산 실패: {result.message}")
+                    lines.append("")
+                    return
+
+                lines.extend([
+                    f"권장 파워: {result.power_percent:.1f}%",
+                    f"샷 거리: {result.shot_yards:.1f}y",
+                    f"장판: {display['board_cells']:.3f}칸",
+                    f"스마트: {display['smart_cells']:.2f}칸",
+                    f"조준 PB: {result.pb:.2f}pb",
+                    f"Real PB: {result.real_pb:.2f}pb",
+                    f"Smart: {result.smart}",
+                    f"Desvio: {result.desvio_yards:.6f}y",
+                    f"Custom PB: {display['custom_pb']:.2f}pb",
+                    f"Custom Real PB: {display['custom_real_pb']:.2f}pb",
+                    f"Custom PBA: {display['custom_pba']:.2f}pba",
+                    f"Custom PBA+: {display['custom_pba_plus']:.2f}pba+",
+                    f"Aim 반복: {result.aim_iterations}",
+                    "",
+                ])
+
+            manual_slope_text = self.calc_slope_edit.text().strip() or "0"
+            result = run_calc_with_slope(manual_slope_text)
+
+            if not result.ok:
+                self.last_calc_result = None
+                self.last_calc_display = None
+                self.last_calc_shot_type = None
+                self.update_backspin_button_state()
+                self.calc_result_box.setPlainText(result.message)
+                return
+
+            display = build_display(result)
 
             self.last_calc_result = result
-            self.last_calc_display = {
-                "board_cells": board_cells,
-                "smart_cells": smart_cells,
-                "board_per_pb": board_per_pb,
-                "smart_divisor": smart_divisor,
-                "yards_to_pb": yards_to_pb,
-                "yards_to_pba": yards_to_pba,
-                "yards_to_pba_plus": yards_to_pba_plus,
-                "custom_pb": custom_pb,
-                "custom_real_pb": custom_real_pb,
-                "custom_pba": custom_pba,
-                "custom_pba_plus": custom_pba_plus,
-            }
+            self.last_calc_display = display
             self.last_calc_shot_type = self.calc_shot_combo.currentData()
             self.update_backspin_button_state()
 
-            output = [                
-                f"권장 파워: {result.power_percent:.1f}%",
-                f"샷 거리: {result.shot_yards:.1f}y",
-                "",
-                "실사용 표시",
-                f"장판: {board_cells:.3f}칸",
-                f"스마트: {smart_cells:.2f}칸",
-                "",
-                "Acrisio 원본 기준",
-                f"조준 PB: {result.pb:.2f}pb",
-                f"Real PB: {result.real_pb:.2f}pb",
-                f"Smart: {result.smart}",
-                f"Desvio: {result.desvio_yards:.6f}y",
-                "",
-                "사용자 환산 기준",
-                f"Custom PB: {custom_pb:.2f}pb  (YARDS_TO_PB={yards_to_pb})",
-                f"Custom Real PB: {custom_real_pb:.2f}pb",
-                f"Custom PBA: {custom_pba:.2f}pba  (YARDS_TO_PBA={yards_to_pba})",
-                f"Custom PBA+: {custom_pba_plus:.2f}pba+  (YARDS_TO_PBA+={yards_to_pba_plus})",
+            output = []
+            append_result_block(output, "[수동/현재 Slope]", result, display, manual_slope_text)
+
+            slope_mode = self.slope_live_mode_combo.currentData() if hasattr(self, "slope_live_mode_combo") else "OFF"
+            slope_live_enabled = hasattr(self, "slope_live_auto_check") and self.slope_live_auto_check.isChecked()
+
+            if slope_live_enabled:
+                # 계산 버튼을 누르는 순간 최신 JSON을 한 번 더 읽는다.
+                self.update_slope_live_from_file()
+                candidates = self.last_slope_live_candidates or {}
+                cand_a = candidates.get("A")
+                cand_b = candidates.get("B")
+
+                if slope_mode == "BOTH_COMPARE":
+                    output.extend([
+                        "==============================",
+                        "[DLL live Slope 후보 비교]",
+                    ])
+
+                    if cand_a is not None:
+                        r_a = run_calc_with_slope(cand_a)
+                        d_a = build_display(r_a) if r_a.ok else {}
+                        append_result_block(output, "[후보 A: scalar70 = raw f70 / 0.00875]", r_a, d_a, f"{cand_a:.4f}")
+
+                    if cand_b is not None:
+                        r_b = run_calc_with_slope(cand_b)
+                        d_b = build_display(r_b) if r_b.ok else {}
+                        append_result_block(output, "[후보 B: scalar78 = raw f78 / 0.00875]", r_b, d_b, f"{cand_b:.4f}")
+
+                    if cand_a is None and cand_b is None:
+                        output.append("DLL live slope 후보가 아직 없습니다.")
+                        output.append("")
+
+                elif slope_mode in ("NORMAL_X", "AXIS_Z_X"):
+                    chosen_name = "A normal.x" if slope_mode == "NORMAL_X" else "B axis_z.x"
+                    chosen = cand_a if slope_mode == "NORMAL_X" else cand_b
+
+                    output.extend([
+                        "==============================",
+                        f"[DLL live Slope 적용 모드: 후보 {chosen_name}]",
+                    ])
+
+                    if chosen is not None:
+                        r_live = run_calc_with_slope(chosen)
+                        d_live = build_display(r_live) if r_live.ok else {}
+                        append_result_block(output, f"[후보 {chosen_name} 적용 계산]", r_live, d_live, f"{chosen:.4f}")
+                    else:
+                        output.append("선택한 DLL live slope 후보가 아직 없습니다.")
+                        output.append("")
+
+            output.extend([
+                "==============================",
+                "표시 단위 / 환산 설정",
+                f"YARDS_TO_PB={yards_to_pb}",
+                f"YARDS_TO_PBA={yards_to_pba}",
+                f"YARDS_TO_PBA+={yards_to_pba_plus}",
                 f"장판 환산값(PB당): {board_per_pb}",
                 f"스마트 나눗값: {smart_divisor}",
-                f"Aim 반복: {result.aim_iterations}",
                 "",
                 "입력 요약",
                 f"Club={self.calc_club_combo.currentText()}, Shot={self.calc_shot_combo.currentText()}, PowerShot={self.calc_power_shot_combo.currentText()}",
                 f"Distance={self.calc_distance_edit.text()}, Height={self.calc_height_edit.text()}, Wind={self.calc_wind_edit.text()}, Degree={self.calc_degree_edit.text()}",
                 f"Ground={self.calc_ground_edit.text()}, Spin={self.calc_spin_edit.text()}, Curve={self.calc_curve_edit.text()}, Slope={self.calc_slope_edit.text()}",
-            ]
+            ])
+
             self.calc_result_box.setPlainText("\n".join(output))
 
         except Exception as e:
@@ -2590,10 +2912,7 @@ class PangyaControlWindow(QWidget):
         if hasattr(self, "memory_auto_check") and self.memory_auto_check.isChecked() and self.memory_probe is None:
             self.start_memory_probe()
 
-        if hasattr(self, "wind_live_auto_check") and self.wind_live_auto_check.isChecked():
-            if not self.wind_live_timer.isActive():
-                self.wind_live_timer.start(250)
-            self.update_wind_live_from_file()
+        self.ensure_live_timers()
 
         self.update_status()
 
