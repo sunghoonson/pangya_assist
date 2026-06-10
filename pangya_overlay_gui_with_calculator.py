@@ -92,6 +92,13 @@ try:
 except Exception as e:
     PangyaBoundingPanel = None
     print(f"[WARN] pangya_bounding_panel 모듈 로드 실패: {e}")
+
+try:
+    from pangya_memory_probe import PangyaMemoryProbe, MemoryProbeError
+except Exception as e:
+    PangyaMemoryProbe = None
+    MemoryProbeError = RuntimeError
+    print(f"[WARN] pangya_memory_probe 모듈 로드 실패: {e}")
 # =========================================================
 # 캡처/녹화 제외 유틸
 # =========================================================
@@ -355,6 +362,14 @@ DEFAULT_CALCULATOR_SETTINGS = {
     "slope": "0",
     "line_ball": "0",
     "line_ball_random": False,
+
+    # ProjectG127.exe 메모리에서 남은거리/고저차 자동 입력
+    "memory_auto_input": False,
+
+    # pangya_wind_logger.dll live JSON에서 바람세기 자동 입력
+    "wind_live_auto_input": False,
+    "wind_live_json_path": "",
+
     "mycella_shot_degree": "0",
     "mycella_align_degree": "0",
     "mycella_slope_break": "0",
@@ -1384,6 +1399,18 @@ class PangyaControlWindow(QWidget):
 
         self.auto_controller = None
 
+        self.memory_probe = None
+        self.memory_timer = QTimer(self)
+        self.memory_timer.timeout.connect(self.update_memory_values_from_game)
+        self.last_memory_distance = None
+        self.last_memory_height = None
+
+        self.wind_live_timer = QTimer(self)
+        self.wind_live_timer.timeout.connect(self.update_wind_live_from_file)
+        self.last_wind_live_tick = None
+        self.last_wind_live_value = None
+        self.last_wind_live_path = None
+
         # 숫자 OCR 자동 인식은 현재 보류.
         # 바람각도는 별도 캡처/클릭 방식으로 처리한다.
         # if PangyaAutoDetectController is not None:
@@ -1669,6 +1696,43 @@ class PangyaControlWindow(QWidget):
 
         root.addWidget(shot_group)
 
+        memory_group = QGroupBox("메모리 자동 입력")
+        memory_layout = QGridLayout(memory_group)
+
+        self.memory_auto_check = QCheckBox("거리/고저차 자동 입력")
+        self.wind_live_auto_check = QCheckBox("바람/각도 자동 입력(DLL live)")
+        self.memory_connect_btn = QPushButton("메모리 연결")
+        self.memory_disconnect_btn = QPushButton("메모리 중지")
+        self.memory_status_label = QLabel("상태: 연결 안 됨")
+        self.memory_distance_label = QLabel("거리: -")
+        self.memory_height_label = QLabel("고저: -")
+        self.wind_live_label = QLabel("바람/signed각도: -")
+        self.wind_live_path_edit = QLineEdit()
+        self.wind_live_path_edit.setPlaceholderText("비워두면 ProjectG127.exe 폴더의 logs\\pangya_wind_live.json 자동 탐색")
+
+        self.memory_disconnect_btn.setEnabled(False)
+
+        memory_layout.addWidget(self.memory_auto_check, 0, 0)
+        memory_layout.addWidget(self.wind_live_auto_check, 0, 1)
+        memory_layout.addWidget(self.memory_connect_btn, 0, 2)
+        memory_layout.addWidget(self.memory_disconnect_btn, 0, 3)
+        memory_layout.addWidget(self.memory_status_label, 0, 4, 1, 2)
+        memory_layout.addWidget(self.memory_distance_label, 1, 0, 1, 2)
+        memory_layout.addWidget(self.memory_height_label, 1, 2, 1, 2)
+        memory_layout.addWidget(self.wind_live_label, 1, 4, 1, 2)
+        memory_layout.addWidget(QLabel("바람 live JSON"), 2, 0)
+        memory_layout.addWidget(self.wind_live_path_edit, 2, 1, 1, 5)
+
+        memory_help = QLabel(
+            "거리/고저차는 기존 ProjectG127.exe 메모리 hook으로 읽고, "
+            "바람은 pangya_wind_logger.dll live JSON의 wind를 읽고, 각도는 signed_degree를 읽어 Degree에 반영합니다. "
+            "관리자 권한으로 실행해야 하며, Cheat Engine 디버거 창은 닫고 사용하세요."
+        )
+        memory_help.setWordWrap(True)
+        memory_layout.addWidget(memory_help, 3, 0, 1, 6)
+
+        root.addWidget(memory_group)
+
         mycella_group = QGroupBox("Mycella 기울기 보조")
         mycella_layout = QGridLayout(mycella_group)
 
@@ -1823,6 +1887,13 @@ class PangyaControlWindow(QWidget):
             self.mycella_btn.clicked.connect(self.on_mycella_clicked)
             self.calc_shot_combo.currentIndexChanged.connect(self.on_calc_shot_changed)
 
+        if hasattr(self, "memory_connect_btn"):
+            self.memory_connect_btn.clicked.connect(self.start_memory_probe)
+            self.memory_disconnect_btn.clicked.connect(self.stop_memory_probe)
+
+        if hasattr(self, "wind_live_auto_check"):
+            self.wind_live_auto_check.stateChanged.connect(self.on_wind_live_auto_changed)
+
 
     def set_combo_by_data(self, combo, value):
         index = combo.findData(value)
@@ -1849,6 +1920,9 @@ class PangyaControlWindow(QWidget):
             "slope": self.calc_slope_edit.text().strip(),
             "line_ball": self.calc_line_ball_edit.text().strip(),
             "line_ball_random": self.calc_line_ball_random_check.isChecked(),
+            "memory_auto_input": self.memory_auto_check.isChecked() if hasattr(self, "memory_auto_check") else False,
+            "wind_live_auto_input": self.wind_live_auto_check.isChecked() if hasattr(self, "wind_live_auto_check") else False,
+            "wind_live_json_path": self.wind_live_path_edit.text().strip() if hasattr(self, "wind_live_path_edit") else "",
             "mycella_shot_degree": self.mycella_shot_degree_edit.text().strip(),
             "mycella_align_degree": self.mycella_align_degree_edit.text().strip(),
             "mycella_slope_break": self.mycella_slope_break_edit.text().strip(),
@@ -1882,6 +1956,12 @@ class PangyaControlWindow(QWidget):
         self.calc_slope_edit.setText(str(s["slope"]))
         self.calc_line_ball_edit.setText(str(s["line_ball"]))
         self.calc_line_ball_random_check.setChecked(bool(s["line_ball_random"]))
+        if hasattr(self, "memory_auto_check"):
+            self.memory_auto_check.setChecked(bool(s.get("memory_auto_input", False)))
+        if hasattr(self, "wind_live_auto_check"):
+            self.wind_live_auto_check.setChecked(bool(s.get("wind_live_auto_input", False)))
+        if hasattr(self, "wind_live_path_edit"):
+            self.wind_live_path_edit.setText(str(s.get("wind_live_json_path", "")))
 
         self.mycella_shot_degree_edit.setText(str(s["mycella_shot_degree"]))
         self.mycella_align_degree_edit.setText(str(s["mycella_align_degree"]))
@@ -1906,6 +1986,258 @@ class PangyaControlWindow(QWidget):
             QMessageBox.information(self, "계산기 입력 불러오기", "저장된 계산기 입력값을 불러왔습니다.")
         except Exception as e:
             QMessageBox.critical(self, "계산기 입력 불러오기 실패", str(e))
+
+    def set_memory_status(self, text):
+        if hasattr(self, "memory_status_label"):
+            self.memory_status_label.setText(text)
+
+    def start_memory_probe(self):
+        if PangyaMemoryProbe is None:
+            QMessageBox.warning(
+                self,
+                "메모리 자동 입력 오류",
+                "pangya_memory_probe.py를 불러오지 못했습니다. 같은 폴더에 파일이 있는지 확인하세요."
+            )
+            return
+
+        if self.memory_probe is not None:
+            self.set_memory_status("상태: 이미 연결됨")
+            return
+
+        try:
+            probe = PangyaMemoryProbe(self.target_exe_edit.text().strip() or "ProjectG127.exe")
+            probe.attach()
+            probe.install_height_hook()
+            probe.install_distance_final_hook()
+
+            self.memory_probe = probe
+            self.memory_timer.start(250)
+
+            self.memory_connect_btn.setEnabled(False)
+            self.memory_disconnect_btn.setEnabled(True)
+            self.set_memory_status("상태: 연결됨 - 거리/고저차 대기 중")
+            print(f"[INFO] 메모리 자동 입력 연결 완료: {probe.debug_info()}")
+
+        except Exception as e:
+            try:
+                probe.close()
+            except Exception:
+                pass
+
+            self.memory_probe = None
+            self.memory_timer.stop()
+            self.memory_connect_btn.setEnabled(True)
+            self.memory_disconnect_btn.setEnabled(False)
+            self.set_memory_status("상태: 연결 실패")
+            QMessageBox.critical(
+                self,
+                "메모리 자동 입력 연결 실패",
+                f"{e}\n\n관리자 권한으로 실행했는지, Cheat Engine 디버거 창이 닫혀 있는지 확인하세요."
+            )
+
+
+    def on_wind_live_auto_changed(self):
+        if hasattr(self, "wind_live_auto_check") and self.wind_live_auto_check.isChecked():
+            if not self.wind_live_timer.isActive():
+                self.wind_live_timer.start(250)
+            self.update_wind_live_from_file()
+        else:
+            if self.wind_live_timer.isActive():
+                self.wind_live_timer.stop()
+            if hasattr(self, "wind_live_label"):
+                self.wind_live_label.setText("바람/각도: -")
+
+    def find_process_exe_path(self, process_name):
+        try:
+            target = (process_name or "ProjectG127.exe").lower()
+            for proc in psutil.process_iter(["name", "exe"]):
+                try:
+                    if (proc.info.get("name") or "").lower() == target:
+                        exe = proc.info.get("exe")
+                        if exe:
+                            return exe
+                except Exception:
+                    continue
+        except Exception:
+            pass
+        return None
+
+    def resolve_wind_live_json_path(self):
+        # 1) 사용자가 직접 지정한 경로
+        manual = ""
+        if hasattr(self, "wind_live_path_edit"):
+            manual = self.wind_live_path_edit.text().strip().strip('"')
+
+        if manual:
+            return manual
+
+        # 2) 실행 중인 ProjectG127.exe 폴더의 logs\\pangya_wind_live.json
+        target_exe = self.target_exe_edit.text().strip() if hasattr(self, "target_exe_edit") else "ProjectG127.exe"
+        exe_path = self.find_process_exe_path(target_exe or "ProjectG127.exe")
+        if exe_path:
+            return os.path.join(os.path.dirname(exe_path), "logs", "pangya_wind_live.json")
+
+        # 3) GUI와 같은 폴더 기준. DLL/클라와 같은 폴더에서 실행하는 경우 대비
+        return os.path.join(get_app_dir(), "logs", "pangya_wind_live.json")
+
+    def update_wind_live_from_file(self):
+        if not hasattr(self, "wind_live_auto_check") or not self.wind_live_auto_check.isChecked():
+            return
+
+        path = self.resolve_wind_live_json_path()
+        self.last_wind_live_path = path
+
+        try:
+            if not os.path.exists(path):
+                if hasattr(self, "wind_live_label"):
+                    self.wind_live_label.setText("바람/각도: live 파일 없음")
+                return
+
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            if not data.get("ok", False):
+                if hasattr(self, "wind_live_label"):
+                    self.wind_live_label.setText("바람/각도: live 값 없음")
+                return
+
+            wind_ok = bool(data.get("wind_ok", data.get("ok", False)))
+            degree_ok = bool(data.get("degree_ok", False))
+
+            wind = float(data.get("wind")) if wind_ok and data.get("wind") is not None else None
+
+            # 중요:
+            # DLL은 degree(0~360, 계속 증가/랩되는 카메라/UI 기준값)와
+            # signed_degree(-180~180, 우리가 계산기에 쓰는 기준값)를 같이 제공한다.
+            # 계산기 Degree에는 degree가 아니라 signed_degree를 넣는다.
+            raw_degree = float(data.get("degree")) if degree_ok and data.get("degree") is not None else None
+            signed_degree = float(data.get("signed_degree")) if degree_ok and data.get("signed_degree") is not None else None
+            radian = data.get("radian")
+            tick = data.get("tick")
+
+            wind_text = "-"
+            signed_text = "-"
+
+            if wind is not None:
+                if not 0.0 <= wind <= 20.0:
+                    if hasattr(self, "wind_live_label"):
+                        self.wind_live_label.setText(f"바람: 범위 밖 {wind}")
+                    return
+
+                wind_text = f"{wind:.0f}" if abs(wind - round(wind)) < 0.001 else f"{wind:.2f}"
+                if self.calc_wind_edit.text().strip() != wind_text:
+                    self.calc_wind_edit.setText(wind_text)
+
+                self.last_wind_live_value = wind
+
+            if signed_degree is not None:
+                # 계산기 입력값은 signed 기준 그대로 사용한다.
+                # 예: -0.20, 45.00, -90.00
+                signed_text = f"{signed_degree:.2f}"
+                if self.calc_degree_edit.text().strip() != signed_text:
+                    self.calc_degree_edit.setText(signed_text)
+            elif raw_degree is not None:
+                # signed_degree가 없는 구버전 JSON을 읽을 경우에만 fallback.
+                # 이 경우는 검증용으로만 표시하고, 가능한 한 DLL을 최신 combined 버전으로 교체해야 한다.
+                fallback = ((raw_degree + 180.0) % 360.0) - 180.0
+                signed_text = f"{fallback:.2f}"
+                if self.calc_degree_edit.text().strip() != signed_text:
+                    self.calc_degree_edit.setText(signed_text)
+
+            self.last_wind_live_tick = tick
+
+            if hasattr(self, "wind_live_label"):
+                display_path = path
+                if len(display_path) > 65:
+                    display_path = "..." + display_path[-62:]
+
+                extra = ""
+                try:
+                    if raw_degree is not None:
+                        extra += f"  raw={raw_degree:.2f}°"
+                    if radian is not None:
+                        extra += f"  rad={float(radian):.4f}"
+                except Exception:
+                    pass
+
+                self.wind_live_label.setText(
+                    f"바람: {wind_text}  각도: {signed_text}°{extra}  tick={tick}  {display_path}"
+                )
+
+        except Exception as e:
+            print(f"[WARN] 바람 live 값 읽기 실패: {e}")
+            if hasattr(self, "wind_live_label"):
+                self.wind_live_label.setText("바람/각도: 읽기 실패")
+
+    def stop_memory_probe(self):
+        if self.wind_live_timer.isActive():
+            self.wind_live_timer.stop()
+
+        if self.memory_timer.isActive():
+            self.memory_timer.stop()
+
+        if self.memory_probe is not None:
+            try:
+                self.memory_probe.close()
+                print("[INFO] 메모리 자동 입력 hook 복구/종료 완료")
+            except Exception as e:
+                print(f"[WARN] 메모리 자동 입력 종료 실패: {e}")
+            finally:
+                self.memory_probe = None
+
+        if hasattr(self, "memory_connect_btn"):
+            self.memory_connect_btn.setEnabled(True)
+            self.memory_disconnect_btn.setEnabled(False)
+
+        self.set_memory_status("상태: 연결 안 됨")
+        if hasattr(self, "memory_distance_label"):
+            self.memory_distance_label.setText("거리: -")
+        if hasattr(self, "memory_height_label"):
+            self.memory_height_label.setText("고저: -")
+        if hasattr(self, "wind_live_label"):
+            self.wind_live_label.setText("바람/각도: -")
+
+    def update_memory_values_from_game(self):
+        if self.memory_probe is None:
+            return
+
+        try:
+            distance = self.memory_probe.read_distance_final()
+            height = self.memory_probe.read_height()
+
+            changed = False
+
+            if distance is not None:
+                self.last_memory_distance = distance
+                if hasattr(self, "memory_distance_label"):
+                    self.memory_distance_label.setText(f"거리: {distance:.2f}y")
+                if hasattr(self, "memory_auto_check") and self.memory_auto_check.isChecked():
+                    current = self.calc_distance_edit.text().strip()
+                    new_text = f"{distance:.2f}"
+                    if current != new_text:
+                        self.calc_distance_edit.setText(new_text)
+                        changed = True
+
+            if height is not None:
+                self.last_memory_height = height
+                if hasattr(self, "memory_height_label"):
+                    self.memory_height_label.setText(f"고저: {height:.2f}m")
+                if hasattr(self, "memory_auto_check") and self.memory_auto_check.isChecked():
+                    current = self.calc_height_edit.text().strip()
+                    new_text = f"{height:.2f}"
+                    if current != new_text:
+                        self.calc_height_edit.setText(new_text)
+                        changed = True
+
+            if distance is not None or height is not None:
+                self.set_memory_status("상태: 연결됨 - 값 수신 중")
+            else:
+                self.set_memory_status("상태: 연결됨 - 샷 화면/값 대기 중")
+
+        except Exception as e:
+            print(f"[WARN] 메모리 값 읽기 실패: {e}")
+            self.set_memory_status("상태: 읽기 실패 - 재연결 필요")
+            self.stop_memory_probe()
 
     def read_calc_float(self, edit, name, default=0.0):
         text = edit.text().strip()
@@ -2255,11 +2587,21 @@ class PangyaControlWindow(QWidget):
         if self.auto_controller is not None:
             self.auto_controller.start()
 
+        if hasattr(self, "memory_auto_check") and self.memory_auto_check.isChecked() and self.memory_probe is None:
+            self.start_memory_probe()
+
+        if hasattr(self, "wind_live_auto_check") and self.wind_live_auto_check.isChecked():
+            if not self.wind_live_timer.isActive():
+                self.wind_live_timer.start(250)
+            self.update_wind_live_from_file()
+
         self.update_status()
 
     def on_stop_clicked(self):
         if self.auto_controller is not None:
             self.auto_controller.stop()
+
+        self.stop_memory_probe()
 
         self.overlay.stop_overlay()
         self.update_status()
@@ -2360,6 +2702,8 @@ class PangyaControlWindow(QWidget):
 
         if self.auto_controller is not None:
             self.auto_controller.stop()
+
+        self.stop_memory_probe()
 
         self.overlay.stop_overlay()
         event.accept()
