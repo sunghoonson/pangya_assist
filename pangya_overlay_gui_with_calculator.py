@@ -378,7 +378,7 @@ DEFAULT_CALCULATOR_SETTINGS = {
     # BOTH_COMPARE : 후보 A/B 둘 다 계산 결과 출력
     "slope_live_auto_input": False,
     "slope_live_json_path": "",
-    "slope_live_mode": "SCALAR_COMPARE",
+    "slope_live_mode": "XY_COMPARE",
 
     "mycella_shot_degree": "0",
     "mycella_align_degree": "0",
@@ -1726,9 +1726,24 @@ class PangyaControlWindow(QWidget):
         self.wind_live_auto_check = QCheckBox("바람/각도 자동 입력(DLL live)")
         self.slope_live_auto_check = QCheckBox("기울기 후보 자동 계산(DLL live)")
         self.slope_live_mode_combo = QComboBox()
-        self.slope_live_mode_combo.addItem("후보 A/B 둘 다 계산", "SCALAR_COMPARE")
-        self.slope_live_mode_combo.addItem("후보 A scalar70을 입력칸에 반영", "SCALAR70")
-        self.slope_live_mode_combo.addItem("후보 B scalar78을 입력칸에 반영", "SCALAR78")
+        self.slope_live_mode_combo.addItem("Slope X/Y 6개 비교: X/Y/MAG +/-", "XY_COMPARE")
+        self.slope_live_mode_combo.addItem("Result Matrix 8개 비교: R0C/R04/R14/R1C +/-", "MATRIX_COMPARE")
+        self.slope_live_mode_combo.addItem("추천 후보: -R0C / 0.00875", "R0C_MINUS")
+        self.slope_live_mode_combo.addItem("후보 R1C+ = R1C / 0.00875", "R1C_PLUS")
+        self.slope_live_mode_combo.addItem("후보 R14- = -R14 / 0.00875", "R14_MINUS")
+        self.slope_live_mode_combo.addItem("후보 R04- = -R04 / 0.00875", "R04_MINUS")
+        self.slope_live_mode_combo.addItem("후보 R0C+ = R0C / 0.00875", "R0C_PLUS")
+        self.slope_live_mode_combo.addItem("후보 R04+ = R04 / 0.00875", "R04_PLUS")
+        self.slope_live_mode_combo.addItem("후보 R14+ = R14 / 0.00875", "R14_PLUS")
+        self.slope_live_mode_combo.addItem("후보 R1C- = -R1C / 0.00875", "R1C_MINUS")
+        self.slope_live_mode_combo.addItem("추천 후보: -MAG / 0.00875", "MAG_MINUS")
+        self.slope_live_mode_combo.addItem("추천 후보: +MAG / 0.00875", "MAG_PLUS")
+        self.slope_live_mode_combo.addItem("후보 X+ = X / 0.00875", "X_PLUS")
+        self.slope_live_mode_combo.addItem("후보 X- = -X / 0.00875", "X_MINUS")
+        self.slope_live_mode_combo.addItem("후보 Y+ = Y / 0.00875", "Y_PLUS")
+        self.slope_live_mode_combo.addItem("후보 Y- = -Y / 0.00875", "Y_MINUS")
+        self.slope_live_mode_combo.addItem("구버전 4개 비교: scalar70/78 +/-", "SIGN_COMPARE")
+        self.slope_live_mode_combo.addItem("구버전 A/B 둘 다 계산", "SCALAR_COMPARE")
         self.slope_live_mode_combo.addItem("자동 입력 안 함", "OFF")
         self.memory_connect_btn = QPushButton("메모리 연결")
         self.memory_disconnect_btn = QPushButton("메모리 중지")
@@ -1969,7 +1984,7 @@ class PangyaControlWindow(QWidget):
             "wind_live_json_path": self.wind_live_path_edit.text().strip() if hasattr(self, "wind_live_path_edit") else "",
             "slope_live_auto_input": self.slope_live_auto_check.isChecked() if hasattr(self, "slope_live_auto_check") else False,
             "slope_live_json_path": self.slope_live_path_edit.text().strip() if hasattr(self, "slope_live_path_edit") else "",
-            "slope_live_mode": self.slope_live_mode_combo.currentData() if hasattr(self, "slope_live_mode_combo") else "SCALAR_COMPARE",
+            "slope_live_mode": self.slope_live_mode_combo.currentData() if hasattr(self, "slope_live_mode_combo") else "XY_COMPARE",
             "mycella_shot_degree": self.mycella_shot_degree_edit.text().strip(),
             "mycella_align_degree": self.mycella_align_degree_edit.text().strip(),
             "mycella_slope_break": self.mycella_slope_break_edit.text().strip(),
@@ -2015,11 +2030,14 @@ class PangyaControlWindow(QWidget):
             self.slope_live_path_edit.setText(str(s.get("slope_live_json_path", "")))
         if hasattr(self, "slope_live_mode_combo"):
             
-            mode = s.get("slope_live_mode", "SCALAR_COMPARE")
+            mode = s.get("slope_live_mode", "XY_COMPARE")
             legacy_map = {
                 "BOTH_COMPARE": "SCALAR_COMPARE",
-                "NORMAL_X": "SCALAR70",
-                "AXIS_Z_X": "SCALAR78",
+                "NORMAL_X": "SCALAR70_PLUS",
+                "AXIS_Z_X": "SCALAR78_PLUS",
+                "SCALAR70": "SCALAR70_PLUS",
+                "SCALAR78": "SCALAR78_PLUS",
+                "SIGN_COMPARE": "XY_COMPARE",
             }
             mode = legacy_map.get(mode, mode)
             self.set_combo_by_data(self.slope_live_mode_combo, mode)
@@ -2311,43 +2329,147 @@ class PangyaControlWindow(QWidget):
         return os.path.join(get_app_dir(), "logs", "pangya_slope_live.json")
 
     def _extract_slope_live_candidates(self, data):
-        # 최신 scalar logger JSON 우선
+        """
+        pangya_slope_live.json에서 slope 후보를 추출한다.
+
+        중요:
+        - Acrisio scalar slope 입력은 내부에서 다시 x = slope_break * 0.00875 * -1 로 변환된다.
+        - 그래서 DLL raw 값이 이미 클라이언트 내부 slope.x 계열이면 부호가 반대로 들어갈 수 있다.
+        - 이번 버전은 scalar70/78의 + / - 부호 후보를 모두 GUI 계산 결과로 비교한다.
+        """
         scalar = data.get("slope_scalar_candidates", {}) or {}
-        cand_a = scalar.get("scalar70_break", None)
-        cand_b = scalar.get("scalar78_div_00875", None)
+        raw_scalars = data.get("raw_scalars", {}) or {}
 
-        if cand_a is not None:
-            cand_a = float(cand_a)
-        if cand_b is not None:
-            cand_b = float(cand_b)
-
-        # 구버전 matrix logger fallback
-        if cand_a is None or cand_b is None:
-            candidates = data.get("slope_break_candidates", {}) or {}
-            def read_candidate(*names):
-                for name in names:
-                    value = candidates.get(name, None)
-                    if value is not None:
-                        return float(value)
+        def to_float_or_none(value):
+            if value is None:
+                return None
+            try:
+                return float(value)
+            except Exception:
                 return None
 
-            old_a = read_candidate("side_from_normal_x", "side_break_from_normal_x")
-            old_b = read_candidate("side_from_axis_z_x", "side_break_from_axis_z_x")
-            if cand_a is None:
-                cand_a = old_a
-            if cand_b is None:
-                cand_b = old_b
+        scalar70_raw = to_float_or_none(scalar.get("scalar70_raw"))
+        scalar78_raw = to_float_or_none(scalar.get("scalar78_raw"))
 
-        # 최후 fallback: 참고용 행렬값. 최종 후보로 쓰기엔 부정확하지만 표시만 가능하게 한다.
-        if cand_a is None or cand_b is None:
-            normal = data.get("normal_candidate", {}) or {}
-            axis_z = data.get("axis_z", {}) or {}
-            if cand_a is None and normal.get("x") is not None:
-                cand_a = -float(normal.get("x")) / 0.00875
-            if cand_b is None and axis_z.get("x") is not None:
-                cand_b = -float(axis_z.get("x")) / 0.00875
+        if scalar70_raw is None:
+            scalar70_raw = to_float_or_none(raw_scalars.get("f70"))
+        if scalar78_raw is None:
+            scalar78_raw = to_float_or_none(raw_scalars.get("f78"))
 
-        return cand_a, cand_b
+        scalar70_plus = to_float_or_none(scalar.get("scalar70_break"))
+        scalar78_plus = to_float_or_none(scalar.get("scalar78_div_00875"))
+
+        if scalar70_plus is None and scalar70_raw is not None:
+            scalar70_plus = scalar70_raw / 0.00875
+        if scalar78_plus is None and scalar78_raw is not None:
+            scalar78_plus = scalar78_raw / 0.00875
+
+        candidates = {
+            "A_PLUS": scalar70_plus,
+            "A_MINUS": -scalar70_plus if scalar70_plus is not None else None,
+            "B_PLUS": scalar78_plus,
+            "B_MINUS": -scalar78_plus if scalar78_plus is not None else None,
+            "scalar70_raw": scalar70_raw,
+            "scalar78_raw": scalar78_raw,
+        }
+
+        # 새 CE 확정 경로: 006E1DFC/006E1E0C에서 읽은 Slope X/Y raw pair.
+        slope_xy = data.get("slope_xy", {}) or {}
+        break_candidates = data.get("break_candidates", {}) or {}
+
+        slope_x = to_float_or_none(slope_xy.get("x"))
+        slope_y = to_float_or_none(slope_xy.get("y"))
+        slope_mag = to_float_or_none(slope_xy.get("mag"))
+
+        x_plus = to_float_or_none(break_candidates.get("x_pos"))
+        x_minus = to_float_or_none(break_candidates.get("x_neg"))
+        y_plus = to_float_or_none(break_candidates.get("y_pos"))
+        y_minus = to_float_or_none(break_candidates.get("y_neg"))
+        mag_plus = to_float_or_none(break_candidates.get("mag_pos"))
+        mag_minus = to_float_or_none(break_candidates.get("mag_neg"))
+
+        if x_plus is None and slope_x is not None:
+            x_plus = slope_x / 0.00875
+        if x_minus is None and x_plus is not None:
+            x_minus = -x_plus
+
+        if y_plus is None and slope_y is not None:
+            y_plus = slope_y / 0.00875
+        if y_minus is None and y_plus is not None:
+            y_minus = -y_plus
+
+        if mag_plus is None and slope_mag is not None:
+            mag_plus = slope_mag / 0.00875
+        if mag_minus is None and mag_plus is not None:
+            mag_minus = -mag_plus
+
+        candidates.update({
+            "X_PLUS": x_plus,
+            "X_MINUS": x_minus,
+            "Y_PLUS": y_plus,
+            "Y_MINUS": y_minus,
+            "MAG_PLUS": mag_plus,
+            "MAG_MINUS": mag_minus,
+            "slope_x_raw": slope_x,
+            "slope_y_raw": slope_y,
+            "slope_mag_raw": slope_mag,
+        })
+
+        # 006E1F68 return 직전 result matrix 후보.
+        # 클라이언트가 raw normal에 회전을 적용한 뒤 반환하는 3x3 basis/matrix에서
+        # 작은 성분들을 /0.00875 해서 slope_break 후보로 비교한다.
+        result_matrix = data.get("result_matrix", {}) or {}
+        result_div = data.get("result_div_00875_candidates", {}) or {}
+
+        def read_matrix_break(field):
+            value = to_float_or_none(result_div.get(field))
+            if value is not None:
+                return value
+            raw = to_float_or_none(result_matrix.get(field))
+            if raw is not None:
+                return raw / 0.00875
+            return None
+
+        for field in ("r04", "r0c", "r14", "r1c"):
+            plus = read_matrix_break(field)
+            key_base = field.upper()
+            candidates[f"{key_base}_PLUS"] = plus
+            candidates[f"{key_base}_MINUS"] = -plus if plus is not None else None
+            raw = to_float_or_none(result_matrix.get(field))
+            candidates[f"{key_base}_RAW"] = raw
+
+        candidates["hook_return_installed"] = bool(data.get("hook_return_installed", False))
+        counts = data.get("counts", {}) or {}
+        candidates["return_count"] = to_float_or_none(counts.get("return"))
+
+        # 구버전 matrix logger fallback. 이번 실전 후보로는 낮은 우선순위지만 참고 계산용으로 유지한다.
+        legacy = data.get("slope_break_candidates", {}) or {}
+        reference = data.get("matrix_candidates_reference_only", {}) or {}
+
+        def read_legacy(*names):
+            for name in names:
+                value = legacy.get(name, None)
+                if value is None:
+                    value = reference.get(name, None)
+                value = to_float_or_none(value)
+                if value is not None:
+                    return value
+            return None
+
+        legacy_a = read_legacy("side_from_normal_x", "side_break_from_normal_x")
+        legacy_b = read_legacy("side_from_axis_z_x", "side_break_from_axis_z_x")
+
+        # 정말 필드가 없을 때만 matrix에서 즉석 계산한다.
+        normal = data.get("normal_candidate", {}) or {}
+        axis_z = data.get("axis_z", {}) or {}
+        if legacy_a is None and normal.get("x") is not None:
+            legacy_a = -float(normal.get("x")) / 0.00875
+        if legacy_b is None and axis_z.get("x") is not None:
+            legacy_b = -float(axis_z.get("x")) / 0.00875
+
+        candidates["LEGACY_A"] = legacy_a
+        candidates["LEGACY_B"] = legacy_b
+        return candidates
 
     def update_slope_live_from_file(self):
         if not hasattr(self, "slope_live_auto_check") or not self.slope_live_auto_check.isChecked():
@@ -2371,34 +2493,51 @@ class PangyaControlWindow(QWidget):
                     self.slope_live_label.setText("기울기 후보: live 값 없음")
                 return
 
-            cand_a, cand_b = self._extract_slope_live_candidates(data)
+            candidates = self._extract_slope_live_candidates(data)
             tick = data.get("tick")
             seq = data.get("seq")
 
-            if cand_a is None and cand_b is None:
+            usable_keys = ["X_PLUS", "X_MINUS", "Y_PLUS", "Y_MINUS", "MAG_PLUS", "MAG_MINUS", "R0C_PLUS", "R0C_MINUS", "R04_PLUS", "R04_MINUS", "R14_PLUS", "R14_MINUS", "R1C_PLUS", "R1C_MINUS", "A_PLUS", "A_MINUS", "B_PLUS", "B_MINUS", "LEGACY_A", "LEGACY_B"]
+            if not any(candidates.get(k) is not None for k in usable_keys):
                 self.last_slope_live_candidates = None
                 if hasattr(self, "slope_live_label"):
                     self.slope_live_label.setText("기울기 후보: 후보 필드 없음")
                 return
 
-            self.last_slope_live_candidates = {
-                "A": cand_a,
-                "B": cand_b,
-                "tick": tick,
-                "seq": seq,
-                "path": path,
-            }
+            candidates["tick"] = tick
+            candidates["seq"] = seq
+            candidates["path"] = path
+            self.last_slope_live_candidates = candidates
             self.last_slope_live_tick = tick
 
-            mode = self.slope_live_mode_combo.currentData() if hasattr(self, "slope_live_mode_combo") else "SCALAR_COMPARE"
+            mode = self.slope_live_mode_combo.currentData() if hasattr(self, "slope_live_mode_combo") else "XY_COMPARE"
 
-            # 후보 A/B 둘 다 비교 모드에서는 입력칸을 건드리지 않는다.
-            # A 또는 B 고정 모드에서만 Slope break 입력칸에 자동 반영한다.
-            chosen = None
-            if mode in ("SCALAR70", "NORMAL_X"):
-                chosen = cand_a
-            elif mode in ("SCALAR78", "AXIS_Z_X"):
-                chosen = cand_b
+            chosen_map = {
+                "X_PLUS": "X_PLUS",
+                "X_MINUS": "X_MINUS",
+                "Y_PLUS": "Y_PLUS",
+                "Y_MINUS": "Y_MINUS",
+                "MAG_PLUS": "MAG_PLUS",
+                "MAG_MINUS": "MAG_MINUS",
+                "R0C_PLUS": "R0C_PLUS",
+                "R0C_MINUS": "R0C_MINUS",
+                "R04_PLUS": "R04_PLUS",
+                "R04_MINUS": "R04_MINUS",
+                "R14_PLUS": "R14_PLUS",
+                "R14_MINUS": "R14_MINUS",
+                "R1C_PLUS": "R1C_PLUS",
+                "R1C_MINUS": "R1C_MINUS",
+                "SCALAR70_PLUS": "A_PLUS",
+                "SCALAR70_MINUS": "A_MINUS",
+                "SCALAR78_PLUS": "B_PLUS",
+                "SCALAR78_MINUS": "B_MINUS",
+                "SCALAR70": "A_PLUS",
+                "SCALAR78": "B_PLUS",
+                "NORMAL_X": "LEGACY_A",
+                "AXIS_Z_X": "LEGACY_B",
+            }
+            chosen_key = chosen_map.get(mode)
+            chosen = candidates.get(chosen_key) if chosen_key else None
 
             if chosen is not None:
                 new_text = f"{chosen:.4f}"
@@ -2410,10 +2549,17 @@ class PangyaControlWindow(QWidget):
                 if len(display_path) > 65:
                     display_path = "..." + display_path[-62:]
 
-                a_text = "-" if cand_a is None else f"{cand_a:.4f}"
-                b_text = "-" if cand_b is None else f"{cand_b:.4f}"
+                def fmt(name):
+                    value = candidates.get(name)
+                    return "-" if value is None else f"{value:.4f}"
+
                 self.slope_live_label.setText(
-                    f"기울기 후보 A(scalar70): {a_text}  B(scalar78): {b_text}  seq={seq} tick={tick}  {display_path}"
+                    f"SlopeX±:{fmt('X_PLUS')}/{fmt('X_MINUS')}  "
+                    f"SlopeY±:{fmt('Y_PLUS')}/{fmt('Y_MINUS')}  "
+                    f"MAG±:{fmt('MAG_PLUS')}/{fmt('MAG_MINUS')}  "
+                    f"R0C±:{fmt('R0C_PLUS')}/{fmt('R0C_MINUS')}  "
+                    f"R1C±:{fmt('R1C_PLUS')}/{fmt('R1C_MINUS')}  "
+                    f"seq={seq} tick={tick}  {display_path}"
                 )
 
         except Exception as e:
@@ -2565,12 +2711,20 @@ class PangyaControlWindow(QWidget):
                 custom_pba = pb_yards / yards_to_pba
                 custom_pba_plus = pb_yards / yards_to_pba_plus
 
-                board_cells = abs(result.pb) * board_per_pb
-                smart_cells = board_cells / smart_divisor
+                # 기존 버전은 abs(result.pb)를 써서 장판 방향 부호가 사라졌다.
+                # 방향 판단을 위해 PB 부호를 그대로 유지한 signed 장판을 기본 표시값으로 둔다.
+                board_cells_signed = result.pb * board_per_pb
+                board_cells_abs = abs(board_cells_signed)
+                smart_cells_signed = board_cells_signed / smart_divisor
+                smart_cells_abs = board_cells_abs / smart_divisor
 
                 return {
-                    "board_cells": board_cells,
-                    "smart_cells": smart_cells,
+                    "board_cells": board_cells_signed,
+                    "smart_cells": smart_cells_signed,
+                    "board_cells_signed": board_cells_signed,
+                    "board_cells_abs": board_cells_abs,
+                    "smart_cells_signed": smart_cells_signed,
+                    "smart_cells_abs": smart_cells_abs,
                     "board_per_pb": board_per_pb,
                     "smart_divisor": smart_divisor,
                     "yards_to_pb": yards_to_pb,
@@ -2594,9 +2748,11 @@ class PangyaControlWindow(QWidget):
                 lines.extend([
                     f"권장 파워: {result.power_percent:.1f}%",
                     f"샷 거리: {result.shot_yards:.1f}y",
-                    f"장판: {display['board_cells']:.3f}칸",
-                    f"스마트: {display['smart_cells']:.2f}칸",
-                    f"조준 PB: {result.pb:.2f}pb",
+                    f"장판(부호): {display['board_cells_signed']:+.3f}칸",
+                    f"장판(abs): {display['board_cells_abs']:.3f}칸",
+                    f"스마트(부호): {display['smart_cells_signed']:+.2f}칸",
+                    f"스마트(abs): {display['smart_cells_abs']:.2f}칸",
+                    f"조준 PB: {result.pb:+.2f}pb",
                     f"Real PB: {result.real_pb:.2f}pb",
                     f"Smart: {result.smart}",
                     f"Desvio: {result.desvio_yards:.6f}y",
@@ -2636,32 +2792,103 @@ class PangyaControlWindow(QWidget):
                 # 계산 버튼을 누르는 순간 최신 JSON을 한 번 더 읽는다.
                 self.update_slope_live_from_file()
                 candidates = self.last_slope_live_candidates or {}
-                cand_a = candidates.get("A")
-                cand_b = candidates.get("B")
 
-                if slope_mode == "BOTH_COMPARE":
+                xy_candidate_specs = [
+                    ("X+", "X_PLUS", "Slope X / 0.00875"),
+                    ("X-", "X_MINUS", "-Slope X / 0.00875"),
+                    ("Y+", "Y_PLUS", "Slope Y / 0.00875"),
+                    ("Y-", "Y_MINUS", "-Slope Y / 0.00875"),
+                    ("MAG+", "MAG_PLUS", "sqrt(X^2+Y^2) / 0.00875"),
+                    ("MAG-", "MAG_MINUS", "-sqrt(X^2+Y^2) / 0.00875"),
+                ]
+                sign_candidate_specs = [
+                    ("A+", "A_PLUS", "구버전 scalar70 = raw f70 / 0.00875"),
+                    ("A-", "A_MINUS", "구버전 scalar70 반대부호 = -raw f70 / 0.00875"),
+                    ("B+", "B_PLUS", "구버전 scalar78 = raw f78 / 0.00875"),
+                    ("B-", "B_MINUS", "구버전 scalar78 반대부호 = -raw f78 / 0.00875"),
+                ]
+                matrix_candidate_specs = [
+                    ("R0C+", "R0C_PLUS", "result r0c / 0.00875"),
+                    ("R0C-", "R0C_MINUS", "-result r0c / 0.00875"),
+                    ("R04+", "R04_PLUS", "result r04 / 0.00875"),
+                    ("R04-", "R04_MINUS", "-result r04 / 0.00875"),
+                    ("R14+", "R14_PLUS", "result r14 / 0.00875"),
+                    ("R14-", "R14_MINUS", "-result r14 / 0.00875"),
+                    ("R1C+", "R1C_PLUS", "result r1c / 0.00875"),
+                    ("R1C-", "R1C_MINUS", "-result r1c / 0.00875"),
+                ]
+                legacy_candidate_specs = [
+                    ("구버전 A", "LEGACY_A", "matrix/reference normal.x 계열"),
+                    ("구버전 B", "LEGACY_B", "matrix/reference axis_z.x 계열"),
+                ]
+
+                if slope_mode in ("XY_COMPARE", "MATRIX_COMPARE", "SIGN_COMPARE", "SCALAR_COMPARE", "BOTH_COMPARE"):
                     output.extend([
                         "==============================",
                         "[DLL live Slope 후보 비교]",
                     ])
 
-                    if cand_a is not None:
-                        r_a = run_calc_with_slope(cand_a)
-                        d_a = build_display(r_a) if r_a.ok else {}
-                        append_result_block(output, "[후보 A: scalar70 = raw f70 / 0.00875]", r_a, d_a, f"{cand_a:.4f}")
+                    if slope_mode == "XY_COMPARE":
+                        specs = xy_candidate_specs
+                        output.append("CE로 확정한 Slope X/Y raw pair 기반 후보를 비교합니다.")
+                        output.append("raw slope에 0.2167을 곱하지 않습니다. raw / 0.00875로 slope_break 후보를 만든 뒤 Acrisio 물리에 넣고, 최종 PB에만 장판 환산값을 적용합니다.")
+                        output.append("")
+                    elif slope_mode == "MATRIX_COMPARE":
+                        specs = matrix_candidate_specs
+                        output.append("006E1F68 return 직전 result matrix 기반 후보를 비교합니다.")
+                        output.append("클라이언트가 raw normal에 회전을 적용한 뒤 만든 작은 matrix 성분을 /0.00875 해서 slope_break 후보로 사용합니다.")
+                        output.append("우선 관찰 후보: -R0C, R1C+, R14-, R04-")
+                        output.append("")
+                    elif slope_mode == "SIGN_COMPARE":
+                        specs = sign_candidate_specs
+                        output.append("구버전 scalar70/78의 +부호와 반대부호를 모두 비교합니다.")
+                        output.append("")
+                    else:
+                        specs = legacy_candidate_specs
+                        output.append("구버전 matrix 후보 비교입니다. 현재는 참고용입니다.")
+                        output.append("")
 
-                    if cand_b is not None:
-                        r_b = run_calc_with_slope(cand_b)
-                        d_b = build_display(r_b) if r_b.ok else {}
-                        append_result_block(output, "[후보 B: scalar78 = raw f78 / 0.00875]", r_b, d_b, f"{cand_b:.4f}")
+                    rendered = 0
+                    for short_name, key, desc in specs:
+                        value = candidates.get(key)
+                        if value is None:
+                            continue
+                        r_live = run_calc_with_slope(value)
+                        d_live = build_display(r_live) if r_live.ok else {}
+                        append_result_block(output, f"[후보 {short_name}: {desc}]", r_live, d_live, f"{value:.4f}")
+                        rendered += 1
 
-                    if cand_a is None and cand_b is None:
+                    if rendered == 0:
                         output.append("DLL live slope 후보가 아직 없습니다.")
                         output.append("")
 
-                elif slope_mode in ("NORMAL_X", "AXIS_Z_X"):
-                    chosen_name = "A normal.x" if slope_mode == "NORMAL_X" else "B axis_z.x"
-                    chosen = cand_a if slope_mode == "NORMAL_X" else cand_b
+                elif slope_mode in ("X_PLUS", "X_MINUS", "Y_PLUS", "Y_MINUS", "MAG_PLUS", "MAG_MINUS", "R0C_PLUS", "R0C_MINUS", "R04_PLUS", "R04_MINUS", "R14_PLUS", "R14_MINUS", "R1C_PLUS", "R1C_MINUS", "SCALAR70_PLUS", "SCALAR70_MINUS", "SCALAR78_PLUS", "SCALAR78_MINUS", "SCALAR70", "SCALAR78", "NORMAL_X", "AXIS_Z_X"):
+                    chosen_map = {
+                        "X_PLUS": ("X+ Slope X / 0.00875", "X_PLUS"),
+                        "X_MINUS": ("X- -Slope X / 0.00875", "X_MINUS"),
+                        "Y_PLUS": ("Y+ Slope Y / 0.00875", "Y_PLUS"),
+                        "Y_MINUS": ("Y- -Slope Y / 0.00875", "Y_MINUS"),
+                        "MAG_PLUS": ("MAG+ sqrt(X²+Y²) / 0.00875", "MAG_PLUS"),
+                        "MAG_MINUS": ("MAG- -sqrt(X²+Y²) / 0.00875", "MAG_MINUS"),
+                        "R0C_PLUS": ("R0C+ result r0c / 0.00875", "R0C_PLUS"),
+                        "R0C_MINUS": ("R0C- -result r0c / 0.00875", "R0C_MINUS"),
+                        "R04_PLUS": ("R04+ result r04 / 0.00875", "R04_PLUS"),
+                        "R04_MINUS": ("R04- -result r04 / 0.00875", "R04_MINUS"),
+                        "R14_PLUS": ("R14+ result r14 / 0.00875", "R14_PLUS"),
+                        "R14_MINUS": ("R14- -result r14 / 0.00875", "R14_MINUS"),
+                        "R1C_PLUS": ("R1C+ result r1c / 0.00875", "R1C_PLUS"),
+                        "R1C_MINUS": ("R1C- -result r1c / 0.00875", "R1C_MINUS"),
+                        "SCALAR70_PLUS": ("A+ scalar70", "A_PLUS"),
+                        "SCALAR70_MINUS": ("A- scalar70 반대부호", "A_MINUS"),
+                        "SCALAR78_PLUS": ("B+ scalar78", "B_PLUS"),
+                        "SCALAR78_MINUS": ("B- scalar78 반대부호", "B_MINUS"),
+                        "SCALAR70": ("A+ scalar70", "A_PLUS"),
+                        "SCALAR78": ("B+ scalar78", "B_PLUS"),
+                        "NORMAL_X": ("구버전 A matrix", "LEGACY_A"),
+                        "AXIS_Z_X": ("구버전 B matrix", "LEGACY_B"),
+                    }
+                    chosen_name, chosen_key = chosen_map.get(slope_mode, ("unknown", None))
+                    chosen = candidates.get(chosen_key) if chosen_key else None
 
                     output.extend([
                         "==============================",
@@ -2713,8 +2940,8 @@ class PangyaControlWindow(QWidget):
             backspin_distance_minus = 14.0
             backspin_max_range = 284.0
 
-            original_board_cells = display["board_cells"]
-            original_smart_cells = display["smart_cells"]
+            original_board_cells = display.get("board_cells_signed", display["board_cells"])
+            original_smart_cells = display.get("smart_cells_signed", display["smart_cells"])
             original_shot_yards = result.shot_yards
             original_power_percent = result.power_percent
 
@@ -2735,13 +2962,16 @@ class PangyaControlWindow(QWidget):
                 f"샷 거리: {backspin_shot_yards:.1f}y",
                 "",
                 "실사용 표시",
-                f"장판: {backspin_board_cells:.3f}칸",
-                f"스마트: {backspin_smart_cells:.2f}칸",
+                f"장판(부호): {backspin_board_cells:+.3f}칸",
+                f"장판(abs): {abs(backspin_board_cells):.3f}칸",
+                f"스마트(부호): {backspin_smart_cells:+.2f}칸",
+                f"스마트(abs): {abs(backspin_smart_cells):.2f}칸",
                 "",
                 "보정 전 Dunk 계산값",
                 f"기존 권장 파워: {original_power_percent:.1f}%",
                 f"기존 샷 거리: {original_shot_yards:.1f}y",
-                f"기존 장판: {original_board_cells:.3f}칸",
+                f"기존 장판(부호): {original_board_cells:+.3f}칸",
+                f"기존 장판(abs): {abs(original_board_cells):.3f}칸",
                 f"기존 스마트: {original_smart_cells:.2f}칸",
                 "",
                 "BackSpin 보정식",
