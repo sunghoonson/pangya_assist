@@ -2772,8 +2772,10 @@ class PangyaControlWindow(QWidget):
             keep_timer("ground_live_auto_check", "ground_live_timer", self.update_ground_live_from_file, 300)
             keep_timer("club_live_auto_check", "club_live_timer", self.update_club_live_from_file, 500)
             keep_timer("wind_live_auto_check", "wind_live_timer", self.update_wind_live_from_file, 300)
-            keep_timer("slope_live_auto_check", "slope_live_timer", self.update_slope_live_from_file, 1200)
-            keep_timer("spin_curve_live_auto_check", "spin_curve_live_timer", self.update_spin_curve_live_from_file, 500)
+            keep_timer("slope_live_auto_check", "slope_live_timer", self.update_slope_live_from_file, 555)
+            # 스핀/커브는 마우스로 빠르게 변하는 값이라 500ms면 중간 변화가 건너뛰어 보일 수 있다.
+            # 기울기 최적화는 유지하고, 스핀/커브 입력 반응만 250ms로 올린다.
+            keep_timer("spin_curve_live_auto_check", "spin_curve_live_timer", self.update_spin_curve_live_from_file, 250)
 
         except Exception as e:
             print(f"[WARN] live timer watchdog 실패: {e}")
@@ -3320,6 +3322,14 @@ class PangyaControlWindow(QWidget):
                 self.spin_curve_live_label.setText("스핀/커브: -")
 
     def resolve_spin_curve_live_json_path(self):
+        """스핀/커브 live JSON 경로를 결정한다.
+
+        중요:
+        - 이 함수는 v8 기울기 저부하 구조를 건드리지 않는다.
+        - spin/curve만 stale plugins JSON을 물지 않도록 logs 표준 경로를 항상 우선한다.
+        - logs 파일이 아직 없어도 표준 logs 경로를 반환해서, 예전 plugins\pangya_spin_curve_live.json을
+          실수로 계속 읽는 문제를 막는다.
+        """
         manual = ""
         if hasattr(self, "spin_curve_live_path_edit"):
             manual = self.spin_curve_live_path_edit.text().strip().strip('"')
@@ -3332,27 +3342,33 @@ class PangyaControlWindow(QWidget):
             self._live_path_cache = {}
             cache = self._live_path_cache
 
-        cached = cache.get("spin_curve")
-        if cached and os.path.exists(cached):
-            return cached
+        def remember(path, *, fallback=False):
+            path = os.path.abspath(path)
+            old_path = cache.get("spin_curve")
+            if old_path != path:
+                cache["spin_curve"] = path
+                if fallback:
+                    print(f"[WARN] spin/curve live JSON fallback path: {path}")
+                else:
+                    print(f"[INFO] spin/curve live JSON path: {path}")
+            return path
 
-        # 표준 위치를 먼저 고정 확인한다. 구버전 plugins JSON은 fallback으로만 본다.
+        # 1) 실행 중인 ProjectG127.exe 폴더의 logs\pangya_spin_curve_live.json
+        #    존재 여부와 상관없이 이 경로를 우선 반환한다.
+        #    그래야 과거 테스트 DLL이 만든 plugins\pangya_spin_curve_live.json stale 파일을 물지 않는다.
         target_exe = self.target_exe_edit.text().strip() if hasattr(self, "target_exe_edit") else "ProjectG127.exe"
         exe_path = self.find_process_exe_path(target_exe or "ProjectG127.exe")
         if exe_path:
             logs_path = os.path.join(os.path.dirname(exe_path), "logs", "pangya_spin_curve_live.json")
-            if os.path.exists(logs_path):
-                cache["spin_curve"] = logs_path
-                return logs_path
+            return remember(logs_path, fallback=False)
 
+        # 2) 프로세스 경로를 못 잡은 경우에도 기존 프로젝트 표준 logs 경로를 우선한다.
         forced_logs_path = os.path.join(FORCED_CLIENT_LOG_DIR, "pangya_spin_curve_live.json")
-        if os.path.exists(forced_logs_path):
-            cache["spin_curve"] = forced_logs_path
-            return forced_logs_path
+        return remember(forced_logs_path, fallback=False)
 
-        found = self.find_existing_live_json_path("pangya_spin_curve_live.json")
-        cache["spin_curve"] = found
-        return found
+        # 아래 fallback은 의도적으로 사용하지 않는다.
+        # found = self.find_existing_live_json_path("pangya_spin_curve_live.json")
+        # return remember(found, fallback=True)
 
     def update_spin_curve_live_from_file(self):
         """pangya_spin_curve_live_logger.dll live JSON에서 spin/curve 값을 읽어 입력칸에 반영한다."""
