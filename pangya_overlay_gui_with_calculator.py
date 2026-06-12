@@ -128,7 +128,7 @@ def set_window_capture_excluded(hwnd, enabled=True):
             print(f"[WARN] SetWindowDisplayAffinity 실패: hwnd={hwnd}, error={error_code}")
             return False
 
-        print(f"[INFO] 캡처 제외 적용 완료: hwnd={hwnd}, enabled={enabled}")
+        #print(f"[INFO] 캡처 제외 적용 완료: hwnd={hwnd}, enabled={enabled}")
         return True
 
     except Exception as e:
@@ -393,6 +393,12 @@ DEFAULT_CALCULATOR_SETTINGS = {
     # pangya_spin_curve_live_logger.dll live JSON에서 스핀/커브 자동 입력
     "spin_curve_live_auto_input": True,
     "spin_curve_live_json_path": "",
+
+    # pangya_lateral_offset_logger.dll live JSON에서 현재 조준선 LINE/DIFF 표시
+    # DIFF는 GUI에서만 계산한다: DIFF = LINE - 계산 장판값
+    "diff_live_auto_input": False,
+    "diff_live_json_path": "",
+    "diff_live_invert_sign": False,
 
     "mycella_shot_degree": "0",
     "mycella_align_degree": "0",
@@ -1134,24 +1140,25 @@ class PangyaOverlay(QWidget):
 
         grid_half_value = self.settings["grid_total_value"] / 2
 
-        print("========== Pangya Overlay Debug ==========")
-        print(f"Target EXE        : {self.settings['target_exe']}")
-        print(f"Target HWND       : {self.target_hwnd}")
-        print(f"Overlay HWND      : {self.overlay_hwnd}")
-        print(f"Target DPI        : {target_dpi}")
-        print(f"Overlay DPI       : {overlay_dpi}")
-        print(f"ClientOnScreen    : left={left}, top={top}, right={right}, bottom={bottom}")
-        print(f"ClientSize        : width={client_width}, height={client_height}")
-        print(f"BASE              : w={self.settings['base_w']}, h={self.settings['base_h']}")
-        print(f"NativeLast        : x={self.last_left}, y={self.last_top}, width={self.last_width}, height={self.last_height}")
-        print(f"CUP_BASE          : x={self.settings['cup_base_x']}, y={self.settings['cup_base_y']}")
-        print(f"GRID              : -{grid_half_value:.2f} ~ +{grid_half_value:.2f}")
-        print(f"SLOPE             : x={self.settings['slope_center_base_x']}, y={self.settings['slope_center_base_y']}, half={self.settings['slope_line_half_width']}")
-        print(
-            f"WIND              : x={self.settings['wind_center_base_x']}, "
-            f"y={self.settings['wind_center_base_y']}, "
-            f"radius={self.settings['wind_radius']}")
-        print("==========================================")
+        #디버그 용 주석
+        # print("========== Pangya Overlay Debug ==========")
+        # print(f"Target EXE        : {self.settings['target_exe']}")
+        # print(f"Target HWND       : {self.target_hwnd}")
+        # print(f"Overlay HWND      : {self.overlay_hwnd}")
+        # print(f"Target DPI        : {target_dpi}")
+        # print(f"Overlay DPI       : {overlay_dpi}")
+        # print(f"ClientOnScreen    : left={left}, top={top}, right={right}, bottom={bottom}")
+        # print(f"ClientSize        : width={client_width}, height={client_height}")
+        # print(f"BASE              : w={self.settings['base_w']}, h={self.settings['base_h']}")
+        # print(f"NativeLast        : x={self.last_left}, y={self.last_top}, width={self.last_width}, height={self.last_height}")
+        # print(f"CUP_BASE          : x={self.settings['cup_base_x']}, y={self.settings['cup_base_y']}")
+        # print(f"GRID              : -{grid_half_value:.2f} ~ +{grid_half_value:.2f}")
+        # print(f"SLOPE             : x={self.settings['slope_center_base_x']}, y={self.settings['slope_center_base_y']}, half={self.settings['slope_line_half_width']}")
+        # print(
+        #     f"WIND              : x={self.settings['wind_center_base_x']}, "
+        #     f"y={self.settings['wind_center_base_y']}, "
+        #     f"radius={self.settings['wind_radius']}")
+        # print("==========================================")
 
     def draw_wind_angle_area(self, painter, scale_x, scale_y):
         """
@@ -1757,6 +1764,16 @@ class PangyaControlWindow(QWidget):
         self.last_spin_curve_live_path = None
         self.last_spin_curve_live_value = None
 
+        # DIFF/LINE live JSON은 조준 중 자주 변하므로 계산 재실행 없이 오버레이 줄만 갱신한다.
+        self.diff_live_timer = QTimer(self)
+        self.diff_live_timer.timeout.connect(self.update_diff_live_from_file)
+        self.last_diff_live_tick = None
+        self.last_diff_live_path = None
+        self.last_diff_live_value = None
+        self.last_overlay_base_lines_no_diff = None
+        self.last_overlay_diff_targets = []
+        self.last_diff_overlay_signature = None
+
         # live JSON 읽기 캐시: 같은 파일/mtime/size이면 json.load를 반복하지 않는다.
         self._live_json_cache = {}
         # live JSON 경로 캐시: 매 tick마다 ProjectG127.exe 경로/후보 경로를 다시 찾지 않는다.
@@ -2216,6 +2233,8 @@ class PangyaControlWindow(QWidget):
         self.wind_live_auto_check = QCheckBox("바람/각도 자동 입력(DLL live)")
         self.slope_live_auto_check = QCheckBox("기울기 단일 후보 자동 입력(DLL live, 저부하)")
         self.spin_curve_live_auto_check = QCheckBox("스핀/커브 자동 입력(DLL live)")
+        self.diff_live_auto_check = QCheckBox("DIFF 표시(DLL live)")
+        self.diff_live_invert_check = QCheckBox("DIFF 부호 반전")
         self.slope_live_mode_combo = QComboBox()
         self.slope_live_mode_combo.addItem("추천 후보: R0C- = -R0C / 0.00875 (자동/저부하)", "R0C_MINUS")
         self.slope_live_mode_combo.addItem("수동 계산 버튼 전용: X/Y 6개 후보 비교", "XY_COMPARE")
@@ -2246,6 +2265,7 @@ class PangyaControlWindow(QWidget):
         self.wind_live_label = QLabel("바람/signed각도: -")
         self.slope_live_label = QLabel("기울기 후보: -")
         self.spin_curve_live_label = QLabel("스핀/커브: -")
+        self.diff_live_label = QLabel("DIFF: -")
         # 실사용 단계에서는 메모리/live 디버그 라벨 숨김
         self.memory_distance_label.setVisible(False)
         self.memory_height_label.setVisible(False)
@@ -2254,6 +2274,7 @@ class PangyaControlWindow(QWidget):
         self.wind_live_label.setVisible(False)
         self.slope_live_label.setVisible(False)
         self.spin_curve_live_label.setVisible(False)
+        self.diff_live_label.setVisible(False)
         self.distance_height_live_path_edit = QLineEdit()
         self.distance_height_live_path_edit.setPlaceholderText("비워두면 ProjectG127.exe 폴더의 logs\\pangya_distance_height_live.json 자동 탐색")
         self.ground_live_path_edit = QLineEdit()
@@ -2266,6 +2287,8 @@ class PangyaControlWindow(QWidget):
         self.slope_live_path_edit.setPlaceholderText("비워두면 ProjectG127.exe 폴더의 logs\\pangya_slope_live.json 자동 탐색")
         self.spin_curve_live_path_edit = QLineEdit()
         self.spin_curve_live_path_edit.setPlaceholderText("비워두면 ProjectG127.exe 폴더의 logs\\pangya_spin_curve_live.json 자동 탐색")
+        self.diff_live_path_edit = QLineEdit()
+        self.diff_live_path_edit.setPlaceholderText("비워두면 ProjectG127.exe 폴더의 logs\\pangya_lateral_offset_live.json 자동 탐색")
 
         self.memory_disconnect_btn.setEnabled(False)
 
@@ -2300,6 +2323,12 @@ class PangyaControlWindow(QWidget):
         memory_layout.addWidget(QLabel("스핀/커브 live JSON"), 10, 0)
         memory_layout.addWidget(self.spin_curve_live_path_edit, 10, 1, 1, 7)
 
+        memory_layout.addWidget(self.diff_live_auto_check, 11, 0)
+        memory_layout.addWidget(self.diff_live_invert_check, 11, 1)
+        memory_layout.addWidget(self.diff_live_label, 11, 2, 1, 6)
+        memory_layout.addWidget(QLabel("DIFF live JSON"), 12, 0)
+        memory_layout.addWidget(self.diff_live_path_edit, 12, 1, 1, 7)
+
         memory_help = QLabel(
             "거리/고저차는 pangya_distance_height_logger.dll live JSON의 distance/height를 읽어 반영합니다. "
             "지면상태는 pangya_ground_logger.dll live JSON의 ground를 읽어 Ground에 반영합니다. "
@@ -2307,10 +2336,11 @@ class PangyaControlWindow(QWidget):
             "바람은 pangya_wind_logger.dll live JSON의 wind를 읽고, 각도는 signed_degree를 읽어 Degree에 반영합니다. "
             "기울기는 pangya_slope_logger.dll live JSON의 후보를 읽어 계산 결과를 비교 출력합니다. "
             "스핀/커브는 pangya_spin_curve_live_logger.dll live JSON의 spin/curve를 읽어 Spin/Curve에 반영합니다. "
+            "DIFF는 pangya_lateral_offset_logger.dll live JSON의 current_line_pb만 읽고, 계산 재실행 없이 오버레이 줄만 갱신합니다. "
             "오버레이에는 slope=0 기준 결과와 선택 기울기 반영 결과를 분리해서 표시합니다."
         )
         memory_help.setWordWrap(True)
-        memory_layout.addWidget(memory_help, 11, 0, 1, 8)
+        memory_layout.addWidget(memory_help, 13, 0, 1, 8)
 
         root.addWidget(memory_group)
 
@@ -2489,6 +2519,10 @@ class PangyaControlWindow(QWidget):
             self.slope_live_auto_check.stateChanged.connect(self.on_slope_live_auto_changed)
         if hasattr(self, "spin_curve_live_auto_check"):
             self.spin_curve_live_auto_check.stateChanged.connect(self.on_spin_curve_live_auto_changed)
+        if hasattr(self, "diff_live_auto_check"):
+            self.diff_live_auto_check.stateChanged.connect(self.on_diff_live_auto_changed)
+        if hasattr(self, "diff_live_invert_check"):
+            self.diff_live_invert_check.stateChanged.connect(self.on_diff_live_invert_changed)
         if hasattr(self, "slope_live_mode_combo"):
             self.slope_live_mode_combo.currentIndexChanged.connect(self.on_slope_live_mode_changed)
 
@@ -2534,6 +2568,9 @@ class PangyaControlWindow(QWidget):
             "slope_live_mode": self.slope_live_mode_combo.currentData() if hasattr(self, "slope_live_mode_combo") else "R0C_MINUS",
             "spin_curve_live_auto_input": self.spin_curve_live_auto_check.isChecked() if hasattr(self, "spin_curve_live_auto_check") else False,
             "spin_curve_live_json_path": self.spin_curve_live_path_edit.text().strip() if hasattr(self, "spin_curve_live_path_edit") else "",
+            "diff_live_auto_input": self.diff_live_auto_check.isChecked() if hasattr(self, "diff_live_auto_check") else False,
+            "diff_live_json_path": self.diff_live_path_edit.text().strip() if hasattr(self, "diff_live_path_edit") else "",
+            "diff_live_invert_sign": self.diff_live_invert_check.isChecked() if hasattr(self, "diff_live_invert_check") else False,
             "mycella_shot_degree": self.mycella_shot_degree_edit.text().strip(),
             "mycella_align_degree": self.mycella_align_degree_edit.text().strip(),
             "mycella_slope_break": self.mycella_slope_break_edit.text().strip(),
@@ -2591,6 +2628,12 @@ class PangyaControlWindow(QWidget):
             self.spin_curve_live_auto_check.setChecked(bool(s.get("spin_curve_live_auto_input", True)))
         if hasattr(self, "spin_curve_live_path_edit"):
             self.spin_curve_live_path_edit.setText(str(s.get("spin_curve_live_json_path", "")))
+        if hasattr(self, "diff_live_auto_check"):
+            self.diff_live_auto_check.setChecked(bool(s.get("diff_live_auto_input", False)))
+        if hasattr(self, "diff_live_path_edit"):
+            self.diff_live_path_edit.setText(str(s.get("diff_live_json_path", "")))
+        if hasattr(self, "diff_live_invert_check"):
+            self.diff_live_invert_check.setChecked(bool(s.get("diff_live_invert_sign", False)))
         if hasattr(self, "slope_live_mode_combo"):
             
             mode = s.get("slope_live_mode", "R0C_MINUS")
@@ -2776,6 +2819,10 @@ class PangyaControlWindow(QWidget):
             # 스핀/커브는 마우스로 빠르게 변하는 값이라 500ms면 중간 변화가 건너뛰어 보일 수 있다.
             # 기울기 최적화는 유지하고, 스핀/커브 입력 반응만 250ms로 올린다.
             keep_timer("spin_curve_live_auto_check", "spin_curve_live_timer", self.update_spin_curve_live_from_file, 250)
+
+            # DIFF는 조준 중 계속 변하지만, JSON 캐시/mtime 확인 + tick 변화시에만 오버레이 갱신한다.
+            # 계산 물리는 다시 돌리지 않고 문자열만 바꿔 렉을 줄인다.
+            keep_timer("diff_live_auto_check", "diff_live_timer", self.update_diff_live_from_file, 250)
 
         except Exception as e:
             print(f"[WARN] live timer watchdog 실패: {e}")
@@ -3453,6 +3500,256 @@ class PangyaControlWindow(QWidget):
             if hasattr(self, "spin_curve_live_label"):
                 self.spin_curve_live_label.setText("스핀/커브: 읽기 실패")
 
+
+    def on_diff_live_auto_changed(self):
+        """DIFF live 표시 체크 변경.
+
+        체크 ON/OFF만으로는 계산 물리를 다시 돌릴 필요가 없다.
+        다만 오버레이 줄 구성은 바뀌므로 signature를 초기화하고 즉시 한 번 갱신한다.
+        """
+        self.ensure_live_timers()
+        self.last_diff_overlay_signature = None
+
+        if hasattr(self, "diff_live_auto_check") and not self.diff_live_auto_check.isChecked():
+            if hasattr(self, "diff_live_label") and self.diff_live_label.isVisible():
+                self.diff_live_label.setText("DIFF: -")
+            # DIFF 줄 제거
+            self.refresh_diff_overlay_only()
+            return
+
+        # 체크 직후 최신 JSON을 한 번만 읽고, 기존 계산 결과 줄에 붙인다.
+        self.update_diff_live_from_file()
+        if self.last_overlay_base_lines_no_diff is None:
+            self.last_auto_result_signature = None
+            self.refresh_auto_result_overlay()
+        else:
+            self.refresh_diff_overlay_only()
+
+    def on_diff_live_invert_changed(self):
+        """DIFF 부호 반전 체크 변경."""
+        self.last_diff_overlay_signature = None
+        self.refresh_diff_overlay_only()
+
+    def resolve_diff_live_json_path(self):
+        """pangya_lateral_offset_logger.dll live JSON 경로를 결정한다.
+
+        표준 경로:
+            ProjectG127.exe 폴더\\logs\\pangya_lateral_offset_live.json
+
+        수동 경로가 비어 있으면 기존 DLL live JSON들과 같은 방식으로
+        ProjectG127.exe 실행 경로를 우선 사용한다.
+        """
+        manual = ""
+        if hasattr(self, "diff_live_path_edit"):
+            manual = self.diff_live_path_edit.text().strip().strip('"')
+
+        if manual:
+            return manual
+
+        cache = getattr(self, "_live_path_cache", None)
+        if cache is None:
+            self._live_path_cache = {}
+            cache = self._live_path_cache
+
+        def remember(path, *, fallback=False):
+            path = os.path.abspath(path)
+            old_path = cache.get("diff")
+            if old_path != path:
+                cache["diff"] = path
+                if fallback:
+                    print(f"[WARN] DIFF live JSON fallback path: {path}")
+                else:
+                    print(f"[INFO] DIFF live JSON path: {path}")
+            return path
+
+        target_exe = self.target_exe_edit.text().strip() if hasattr(self, "target_exe_edit") else "ProjectG127.exe"
+        exe_path = self.find_process_exe_path(target_exe or "ProjectG127.exe")
+        if exe_path:
+            return remember(
+                os.path.join(os.path.dirname(exe_path), "logs", "pangya_lateral_offset_live.json"),
+                fallback=False,
+            )
+
+        return remember(
+            os.path.join(FORCED_CLIENT_LOG_DIR, "pangya_lateral_offset_live.json"),
+            fallback=True,
+        )
+
+    def update_diff_live_from_file(self):
+        """pangya_lateral_offset_logger.dll live JSON에서 현재 조준선 LINE 값을 읽는다.
+
+        중요:
+        - 여기서는 calc_shot을 호출하지 않는다.
+        - JSON tick/seq 또는 current_line_pb가 바뀐 경우에만 오버레이 문자열만 갱신한다.
+        - GUI 장판 환산값은 현재 GUI의 board_per_pb를 사용한다.
+        """
+        if not hasattr(self, "diff_live_auto_check") or not self.diff_live_auto_check.isChecked():
+            return
+
+        path = self.resolve_diff_live_json_path()
+        self.last_diff_live_path = path
+
+        try:
+            if not os.path.exists(path):
+                self.last_diff_live_value = None
+                if hasattr(self, "diff_live_label") and self.diff_live_label.isVisible():
+                    self.diff_live_label.setText("DIFF: live 파일 없음")
+                self.refresh_diff_overlay_only()
+                return
+
+            data = self.read_json_file_retry(path)
+
+            if not data.get("ok", False) or not data.get("line_ok", data.get("ok", False)):
+                self.last_diff_live_value = None
+                if hasattr(self, "diff_live_label") and self.diff_live_label.isVisible():
+                    reason = data.get("reason", "live 값 없음")
+                    self.diff_live_label.setText(f"DIFF: {reason}")
+                self.refresh_diff_overlay_only()
+                return
+
+            raw_line_pb = data.get("current_line_pb")
+            if raw_line_pb is None:
+                self.last_diff_live_value = None
+                if hasattr(self, "diff_live_label") and self.diff_live_label.isVisible():
+                    self.diff_live_label.setText("DIFF: current_line_pb 없음")
+                self.refresh_diff_overlay_only()
+                return
+
+            line_pb = float(raw_line_pb)
+
+            # 비정상 포인터/초기화 값 방어
+            if not -10000.0 <= line_pb <= 10000.0:
+                return
+
+            tick = data.get("tick")
+            seq = data.get("seq")
+            pre_hit = data.get("pre_hit")
+
+            old = self.last_diff_live_value or {}
+            old_tick = old.get("tick")
+            old_seq = old.get("seq")
+            old_line = old.get("line_pb")
+
+            # 같은 tick/seq이고 라인 변화도 없으면 오버레이 갱신 생략
+            try:
+                same_line = old_line is not None and abs(float(old_line) - line_pb) < 0.0005
+            except Exception:
+                same_line = False
+
+            if old_tick == tick and old_seq == seq and same_line:
+                return
+
+            self.last_diff_live_tick = tick
+            self.last_diff_live_value = {
+                "line_pb": line_pb,
+                "tick": tick,
+                "seq": seq,
+                "pre_hit": pre_hit,
+                "path": path,
+            }
+
+            if hasattr(self, "diff_live_label") and self.diff_live_label.isVisible():
+                try:
+                    board_per_pb = self.read_calc_float_silent(self.calc_board_per_pb_edit, 0.2121)
+                except Exception:
+                    board_per_pb = 0.2121
+                shown_pb = -line_pb if self.diff_live_invert_check.isChecked() else line_pb
+                self.diff_live_label.setText(
+                    f"DIFF LINE: {shown_pb * board_per_pb:+.3f}칸 / PB{shown_pb:+.2f} seq={seq} tick={tick}"
+                )
+
+            self.refresh_diff_overlay_only()
+
+        except Exception as e:
+            print(f"[WARN] DIFF live 값 읽기 실패: {e}")
+            if hasattr(self, "diff_live_label") and self.diff_live_label.isVisible():
+                self.diff_live_label.setText("DIFF: 읽기 실패")
+
+    def build_diff_overlay_lines(self, base_lines, diff_targets):
+        """기존 계산 결과 줄에 LINE/DIFF 줄을 붙여 반환한다.
+
+        DIFF 정의:
+            DIFF = 현재 조준선 LINE - 계산 장판값
+
+        예:
+            계산 장판 +3.000, 홀컵 정조준 LINE 0.000 -> DIFF -3.000
+            LINE +3.000까지 조준 이동 -> DIFF 0.000
+        """
+        lines = list(base_lines or [])
+
+        if not hasattr(self, "diff_live_auto_check") or not self.diff_live_auto_check.isChecked():
+            return lines
+
+        diff_value = self.last_diff_live_value
+        if not diff_value or diff_value.get("line_pb") is None:
+            lines.append("LINE/DIFF: live 대기")
+            return lines
+
+        try:
+            board_per_pb = self.read_calc_float_silent(self.calc_board_per_pb_edit, 0.2121)
+        except Exception:
+            board_per_pb = 0.2121
+
+        try:
+            line_pb = float(diff_value.get("line_pb"))
+        except Exception:
+            lines.append("LINE/DIFF: 값 오류")
+            return lines
+
+        if hasattr(self, "diff_live_invert_check") and self.diff_live_invert_check.isChecked():
+            line_pb = -line_pb
+
+        line_board = line_pb * board_per_pb
+        #lines.append(f"LINE: {line_board:+.3f}칸 / PB{line_pb:+.2f}")
+
+        targets = list(diff_targets or [])
+        # 기본(기울기0) DIFF는 숨기고, 기울기/수동 target만 표시한다.
+        if len(targets) > 1:
+            targets = [t for t in targets if str(t.get("name", "")) != "기본"]
+
+        if not targets:
+            lines.append("DIFF: 계산 대기")
+            return lines
+
+        # 너무 많은 줄을 만들면 좌상단이 길어지므로 기본 + 선택 기울기 정도만 표시한다.
+        for idx, target in enumerate(targets[:3]):
+            try:
+                target_pb = float(target.get("target_pb", 0.0))
+            except Exception:
+                continue
+
+            name = str(target.get("name", "") or "기본")
+            diff_pb = line_pb - target_pb
+            diff_board = diff_pb * board_per_pb
+
+            if len(targets) == 1:
+                label = "DIFF"
+            elif idx == 0:
+                label = "DIFF(기본)"
+            else:
+                label = f"DIFF({name})"
+
+            lines.append(f"{label}: {diff_board:+.3f}칸 / PB{diff_pb:+.2f}")
+
+        return lines
+
+    def refresh_diff_overlay_only(self):
+        """DIFF/LINE만 바뀐 경우 계산 물리를 다시 돌리지 않고 오버레이 문자열만 갱신한다."""
+        base_lines = self.last_overlay_base_lines_no_diff
+        if base_lines is None:
+            # 아직 자동 계산 결과가 없으면 한 번만 계산 결과를 만들도록 요청한다.
+            self.last_auto_result_signature = None
+            return
+
+        final_lines = self.build_diff_overlay_lines(base_lines, self.last_overlay_diff_targets)
+
+        signature = tuple(final_lines)
+        if signature == self.last_diff_overlay_signature:
+            return
+
+        self.last_diff_overlay_signature = signature
+        self.overlay.set_calc_state({"type": "calc_result", "lines": final_lines})
+
     def stop_memory_probe(self):
         # 거리/고저 live JSON timer만 중지한다.
         # wind/slope live JSON timer는 각 체크박스와 watchdog이 별도로 관리한다.
@@ -3777,6 +4074,8 @@ class PangyaControlWindow(QWidget):
             self.ground_live_auto_check.isChecked() if hasattr(self, "ground_live_auto_check") else False,
             self.club_live_auto_check.isChecked() if hasattr(self, "club_live_auto_check") else False,
             self.spin_curve_live_auto_check.isChecked() if hasattr(self, "spin_curve_live_auto_check") else False,
+            self.diff_live_auto_check.isChecked() if hasattr(self, "diff_live_auto_check") else False,
+            self.diff_live_invert_check.isChecked() if hasattr(self, "diff_live_invert_check") else False,
         ]
 
         # 중요: slope 후보 전체를 signature에 넣지 않는다.
@@ -3828,6 +4127,7 @@ class PangyaControlWindow(QWidget):
             shot_name = self.calc_shot_combo.currentText()
 
             valid_results = []
+            diff_targets = []
 
             base_result = self.run_calc_for_overlay("0")
             if not base_result.ok:
@@ -3842,6 +4142,11 @@ class PangyaControlWindow(QWidget):
                     smart_divisor,
                 )
                 valid_results.append((base_result, base_display))
+                diff_targets.append({
+                    "name": "기본",
+                    "target_pb": float(base_result.pb),
+                    "target_board": float(base_display.get("board_cells_signed", 0.0)),
+                })
 
                 lines = [
                     "실시간 결과",
@@ -3875,6 +4180,11 @@ class PangyaControlWindow(QWidget):
                                 smart_divisor,
                             )
                             valid_results.append((result, display))
+                            diff_targets.append({
+                                "name": str(name),
+                                "target_pb": float(result.pb),
+                                "target_board": float(display.get("board_cells_signed", 0.0)),
+                            })
                             lines.append(
                                 f"{name}(기울기): {result.power_percent:.1f}% / {result.shot_yards:.1f}y / "
                                 f"{display['board_cells_signed']:+.3f}칸 / PB{result.pb:+.2f} / S{float(slope_value):+.4f}"
@@ -3902,6 +4212,11 @@ class PangyaControlWindow(QWidget):
                                 smart_divisor,
                             )
                             valid_results.append((result, display))
+                            diff_targets.append({
+                                "name": "수동",
+                                "target_pb": float(result.pb),
+                                "target_board": float(display.get("board_cells_signed", 0.0)),
+                            })
                             lines.append(
                                 f"수동기울기: {result.power_percent:.1f}% / {result.shot_yards:.1f}y / "
                                 f"{display['board_cells_signed']:+.3f}칸 / PB{result.pb:+.2f} / S{float(manual_slope):+.4f}"
@@ -3914,7 +4229,13 @@ class PangyaControlWindow(QWidget):
                 self.last_calc_shot_type = self.calc_shot_combo.currentData()
                 self.update_backspin_button_state()
 
-            self.overlay.set_calc_state({"type": "calc_result", "lines": lines})
+            # DIFF는 조준 중 자주 바뀌므로 계산 결과 기본 줄과 target만 보관한다.
+            # 이후 DIFF timer는 이 기본 줄에 LINE/DIFF 줄만 붙여서 오버레이를 갱신한다.
+            self.last_overlay_base_lines_no_diff = list(lines)
+            self.last_overlay_diff_targets = list(diff_targets)
+            final_lines = self.build_diff_overlay_lines(lines, diff_targets)
+            self.overlay.set_calc_state({"type": "calc_result", "lines": final_lines})
+            self.last_diff_overlay_signature = None
             self.last_auto_result_error = None
 
         except Exception as e:
