@@ -144,7 +144,7 @@ BASE_W = 2048
 BASE_H = 1152
 
 DEBUG_LOG_INTERVAL_SEC = 2.0
-TRACK_INTERVAL_MS = 33
+TRACK_INTERVAL_MS = 50
 FORCED_CLIENT_LOG_DIR = r"C:\Pangya_US8JP\RELEASE SRV4\@Client EXE\logs"
 
 WIND_ANGLE_STEP = 5
@@ -184,6 +184,8 @@ DEFAULT_SETTINGS = {
     "show_wind": True,
     "show_slope": True,
     "show_result": True,
+    # 좌상단 오버레이 하단에 Shot / PowerShot 클릭 선택 영역 표시
+    "show_quick_overlay_controls": True,
 
     # 캡처/녹화 제외 옵션
     "capture_exclude_enabled": True,
@@ -386,7 +388,7 @@ DEFAULT_CALCULATOR_SETTINGS = {
     # BOTH_COMPARE : 후보 A/B 둘 다 계산 결과 출력
     "slope_live_auto_input": False,
     "slope_live_json_path": "",
-    "slope_live_mode": "XY_COMPARE",
+    "slope_live_mode": "R0C_MINUS",
 
     # pangya_spin_curve_live_logger.dll live JSON에서 스핀/커브 자동 입력
     "spin_curve_live_auto_input": True,
@@ -832,7 +834,7 @@ class PangyaOverlay(QWidget):
     def draw_calc_result_panel(self, painter, scale_x, scale_y):
         """
         계산기 탭에서 마지막으로 계산한 결과를 게임 화면 좌상단에 표시한다.
-        배경 박스는 그리지 않고, 글자 그림자만 넣어서 원래 게임 UI를 최대한 가리지 않는다.
+        Shot/PS 퀵 선택 패널을 위쪽에 두는 경우, 결과 텍스트는 그 아래로 내려서 겹치지 않게 한다.
         """
         if not self.settings.get("show_result", True):
             return
@@ -872,25 +874,73 @@ class PangyaOverlay(QWidget):
         if not lines:
             return
 
-        x = int(28 * scale_x)
-        y = int(72 * scale_y)
         scale = max(0.75, min(scale_x, scale_y))
+        x = int(28 * scale_x)
+
+        # 퀵 선택 패널이 켜져 있으면 결과 박스 자체가 패널 아래에서 시작하도록 내린다.
+        # 기존에는 텍스트 baseline만 내려서 배경 박스 상단이 퀵 패널과 살짝 겹칠 수 있었다.
+        quick_enabled = bool(self.settings.get("show_quick_overlay_controls", True))
+        quick_h = max(62, int(70 * scale)) if quick_enabled else 0
+        quick_gap = max(18, int(22 * scale)) if quick_enabled else 0
+        quick_top = int(72 * scale_y)
+
         line_h = max(18, int(22 * scale))
 
         font = QFont("Malgun Gothic")
         font.setPixelSize(max(15, int(18 * scale)))
         font.setBold(True)
         painter.setFont(font)
+        fm = painter.fontMetrics()
 
-        # 배경은 완전 투명. 대신 검은 그림자를 2번 그려 가독성 확보.
+        # y는 텍스트 baseline이다. 배경 박스 top이 quick_bottom + gap보다 아래가 되게 계산한다.
+        bg_pad_y = max(6, int(7 * scale))
+        y = quick_top + quick_h + quick_gap + fm.ascent() + bg_pad_y
+
+        max_text_w = 0
+        for text in lines:
+            try:
+                max_text_w = max(max_text_w, fm.horizontalAdvance(text))
+            except Exception:
+                max_text_w = max(max_text_w, len(text) * int(10 * scale))
+
+        bg_pad_x = max(8, int(10 * scale))
+        bg_x = max(0, x - bg_pad_x)
+        bg_y = max(0, y - fm.ascent() - bg_pad_y)
+        bg_w = min(
+            max(220, max_text_w + bg_pad_x * 2),
+            max(220, self.width() - bg_x - int(10 * scale)),
+        )
+        bg_h = len(lines) * line_h + bg_pad_y * 2
+
+        # 반투명 배경 박스. 기존보다 조금 더 읽기 쉽게 하되 게임 화면을 많이 가리지 않게 한다.
+        painter.setPen(QPen(QColor(255, 255, 255, 55), 1))
+        painter.setBrush(QColor(0, 0, 0, 88))
+        painter.drawRoundedRect(bg_x, bg_y, bg_w, bg_h, 8, 8)
+
+        # 왼쪽 얇은 강조선
+        painter.setPen(QPen(QColor(255, 210, 30, 210), max(2, int(3 * scale))))
+        painter.drawLine(bg_x + 2, bg_y + 7, bg_x + 2, bg_y + bg_h - 7)
+
         for idx, text in enumerate(lines):
             ty = y + idx * line_h
 
-            painter.setPen(QPen(QColor(0, 0, 0, 235), 1))
+            # 첫 줄은 제목으로 보고 노란색 강조.
+            # 계산 실패/대기 상태도 눈에 잘 들어오게 약간 따뜻한 색을 쓴다.
+            if idx == 0:
+                fg = QColor(255, 225, 80, 255)
+            elif "실패" in text or "오류" in text or "대기" in text:
+                fg = QColor(255, 230, 145, 255)
+            elif "spin/curve" in text or text.startswith("club") or text.startswith("ground"):
+                fg = QColor(210, 240, 255, 255)
+            else:
+                fg = QColor(255, 255, 255, 250)
+
+            # 그림자 2중 처리
+            painter.setPen(QPen(QColor(0, 0, 0, 245), 1))
             painter.drawText(x + 2, ty + 2, text)
             painter.drawText(x - 1, ty + 1, text)
 
-            painter.setPen(QPen(QColor(255, 255, 255, 250), 1))
+            painter.setPen(QPen(fg, 1))
             painter.drawText(x, ty, text)
 
     def start_overlay(self):
@@ -1037,7 +1087,7 @@ class PangyaOverlay(QWidget):
             self.last_width = width
             self.last_height = height
 
-        self.update()
+            self.update()
 
         self.print_debug_log(
             left=left,
@@ -1408,6 +1458,236 @@ class PangyaOverlay(QWidget):
 
         self.draw_calc_result_panel(painter, scale_x, scale_y)
 
+
+# =========================================================
+# 좌상단 클릭형 Shot / PowerShot 퀵 오버레이
+# =========================================================
+
+class PangyaQuickControlOverlay(QWidget):
+    """
+    게임 오버레이 전체를 클릭 가능하게 만들면 게임 입력을 막게 된다.
+    그래서 일반 오버레이는 그대로 마우스 투과 상태로 두고,
+    좌상단 결과 아래에 작은 별도 topmost 창만 올려 Shot / PowerShot 선택을 받는다.
+    """
+    SHOT_ITEMS = [
+        ("Dunk", "DUNK"),
+        ("Tomahawk", "TOMAHAWK"),
+        ("Spike", "SPIKE"),
+        ("Cobra", "COBRA"),
+    ]
+    POWER_SHOT_ITEMS = [
+        ("No PS", "NO_POWER_SHOT"),
+        ("1 PS", "ONE_POWER_SHOT"),
+        ("2 PS", "TWO_POWER_SHOT"),
+        ("15y", "ITEM_15_POWER_SHOT"),
+    ]
+
+    def __init__(self, control_window):
+        super().__init__(None)
+        self.control_window = control_window
+        self.hit_items = []
+        self.hover_item = None
+        self.quick_hwnd = None
+        self._style_applied_key = None
+        self._capture_exclude_key = None
+        self._last_geometry_tuple = None
+
+        self.setWindowFlags(
+            Qt.FramelessWindowHint |
+            Qt.WindowStaysOnTopHint |
+            Qt.Tool |
+            Qt.WindowDoesNotAcceptFocus
+        )
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setAttribute(Qt.WA_NoSystemBackground)
+        self.setMouseTracking(True)
+        self.hide()
+
+        self.quick_hwnd = int(self.winId())
+        self.apply_window_style()
+        self.apply_capture_exclude_setting()
+
+    def apply_window_style(self, force=False):
+        try:
+            self.quick_hwnd = int(self.winId())
+        except Exception:
+            pass
+        if not self.quick_hwnd:
+            return False
+
+        key = int(self.quick_hwnd)
+        if not force and self._style_applied_key == key:
+            return True
+
+        try:
+            ex_style = win32gui.GetWindowLong(self.quick_hwnd, win32con.GWL_EXSTYLE)
+            ex_style |= win32con.WS_EX_LAYERED
+            ex_style |= win32con.WS_EX_TOOLWINDOW
+            ex_style |= win32con.WS_EX_TOPMOST
+            if hasattr(win32con, "WS_EX_NOACTIVATE"):
+                ex_style |= win32con.WS_EX_NOACTIVATE
+            # 중요: WS_EX_TRANSPARENT는 넣지 않는다. 이 작은 창은 클릭을 받아야 한다.
+            win32gui.SetWindowLong(self.quick_hwnd, win32con.GWL_EXSTYLE, ex_style)
+            self._style_applied_key = key
+            return True
+        except Exception as e:
+            print(f"[WARN] quick overlay style 적용 실패: {e}")
+            return False
+
+    def apply_capture_exclude_setting(self, force=False):
+        # SetWindowDisplayAffinity는 생각보다 비용이 있으므로 매 위치 갱신마다 호출하지 않는다.
+        # HWND/설정값이 바뀌었거나 show 직후 1회만 적용한다.
+        try:
+            self.quick_hwnd = int(self.winId())
+        except Exception:
+            pass
+        if not self.quick_hwnd:
+            return False
+
+        settings = getattr(self.control_window, "settings", {}) or {}
+        enabled = bool(settings.get("capture_exclude_enabled", True))
+        key = (int(self.quick_hwnd), enabled)
+        if not force and self._capture_exclude_key == key:
+            return True
+
+        ok = set_window_capture_excluded(self.quick_hwnd, enabled)
+        if ok:
+            self._capture_exclude_key = key
+        return ok
+
+    def current_shot(self):
+        cw = self.control_window
+        if hasattr(cw, "calc_shot_combo"):
+            return cw.calc_shot_combo.currentData()
+        return None
+
+    def current_power_shot(self):
+        cw = self.control_window
+        if hasattr(cw, "calc_power_shot_combo"):
+            return cw.calc_power_shot_combo.currentData()
+        return None
+
+    def _draw_button_row(self, painter, label, items, selected_value, y, row_kind):
+        self.hit_items = [item for item in self.hit_items if item[4] != row_kind]
+
+        scale = max(0.85, min(self.width() / 520.0, 1.6))
+        font = QFont("Malgun Gothic")
+        font.setPixelSize(max(13, int(15 * scale)))
+        font.setBold(True)
+        painter.setFont(font)
+        fm = painter.fontMetrics()
+
+        x = int(8 * scale)
+        label_w = int(48 * scale)
+        row_h = max(22, int(26 * scale))
+        gap = max(4, int(6 * scale))
+
+        painter.setPen(QPen(QColor(0, 0, 0, 230), 1))
+        painter.drawText(x + 1, y + row_h - 7 + 1, label)
+        painter.setPen(QPen(QColor(235, 235, 235, 250), 1))
+        painter.drawText(x, y + row_h - 7, label)
+        x += label_w
+
+        for text, value in items:
+            text_w = fm.horizontalAdvance(text)
+            w = max(int(52 * scale), text_w + int(18 * scale))
+            h = row_h
+            is_selected = value == selected_value
+            is_hover = self.hover_item == (row_kind, value)
+
+            if is_selected:
+                bg = QColor(255, 215, 35, 235)
+                fg = QColor(20, 20, 20, 255)
+                border = QColor(255, 250, 150, 255)
+            elif is_hover:
+                bg = QColor(255, 255, 255, 105)
+                fg = QColor(255, 255, 255, 255)
+                border = QColor(255, 255, 255, 180)
+            else:
+                bg = QColor(0, 0, 0, 135)
+                fg = QColor(245, 245, 245, 240)
+                border = QColor(255, 255, 255, 125)
+
+            painter.setPen(QPen(border, 1))
+            painter.setBrush(bg)
+            painter.drawRoundedRect(x, y, w, h, 5, 5)
+
+            painter.setPen(QPen(QColor(0, 0, 0, 190), 1))
+            painter.drawText(x + 10 + 1, y + h - 7 + 1, text)
+            painter.setPen(QPen(fg, 1))
+            painter.drawText(x + 10, y + h - 7, text)
+
+            self.hit_items.append((x, y, w, h, row_kind, value))
+            x += w + gap
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+
+        # 아주 옅은 배경만 둬서 텍스트 가독성을 확보한다.
+        painter.setPen(QPen(QColor(255, 255, 255, 85), 1))
+        painter.setBrush(QColor(0, 0, 0, 92))
+        painter.drawRoundedRect(0, 0, max(1, self.width() - 1), max(1, self.height() - 1), 8, 8)
+
+        self.hit_items = []
+        scale = max(0.85, min(self.width() / 520.0, 1.6))
+        row_h = max(22, int(26 * scale))
+        top = max(5, int(6 * scale))
+        gap_y = max(4, int(5 * scale))
+
+        self._draw_button_row(
+            painter,
+            "Shot",
+            self.SHOT_ITEMS,
+            self.current_shot(),
+            top,
+            "shot",
+        )
+        self._draw_button_row(
+            painter,
+            "PS",
+            self.POWER_SHOT_ITEMS,
+            self.current_power_shot(),
+            top + row_h + gap_y,
+            "power_shot",
+        )
+
+    def _hit_test(self, pos):
+        px = pos.x()
+        py = pos.y()
+        for x, y, w, h, kind, value in self.hit_items:
+            if x <= px <= x + w and y <= py <= y + h:
+                return kind, value
+        return None
+
+    def mouseMoveEvent(self, event):
+        hit = self._hit_test(event.position().toPoint())
+        if hit != self.hover_item:
+            self.hover_item = hit
+            self.setCursor(Qt.PointingHandCursor if hit else Qt.ArrowCursor)
+            self.update()
+
+    def leaveEvent(self, event):
+        if self.hover_item is not None:
+            self.hover_item = None
+            self.setCursor(Qt.ArrowCursor)
+            self.update()
+        super().leaveEvent(event)
+
+    def mousePressEvent(self, event):
+        if event.button() != Qt.LeftButton:
+            return
+        hit = self._hit_test(event.position().toPoint())
+        if not hit:
+            return
+
+        kind, value = hit
+        if kind == "shot":
+            self.control_window.select_quick_shot(value)
+        elif kind == "power_shot":
+            self.control_window.select_quick_power_shot(value)
+        self.update()
+
 # =========================================================
 # 설정 GUI 클래스
 # =========================================================
@@ -1479,6 +1759,8 @@ class PangyaControlWindow(QWidget):
 
         # live JSON 읽기 캐시: 같은 파일/mtime/size이면 json.load를 반복하지 않는다.
         self._live_json_cache = {}
+        # live JSON 경로 캐시: 매 tick마다 ProjectG127.exe 경로/후보 경로를 다시 찾지 않는다.
+        self._live_path_cache = {}
 
         # live JSON은 오버레이 Start/Stop이나 메모리 연결 상태와 독립적으로 감시한다.
         # 기존 버전은 메모리 중지/Start 순서에 따라 wind/slope timer가 꺼진 채 남는 문제가 있었다.
@@ -1492,10 +1774,19 @@ class PangyaControlWindow(QWidget):
         # 좌상단 결과 오버레이를 자동으로 다시 계산한다.
         self.last_auto_result_signature = None
         self.last_auto_result_error = None
+        self._auto_result_refresh_scheduled = False
         self.auto_result_timer = QTimer(self)
         self.auto_result_timer.timeout.connect(self.refresh_auto_result_overlay)
-        self.auto_result_timer.start(700)
+        self.auto_result_timer.start(900)
         QTimer.singleShot(300, self.refresh_auto_result_overlay)
+
+        # 좌상단 Shot / PowerShot 클릭 퀵 오버레이.
+        # 일반 오버레이는 마우스 투과 상태를 유지하고, 이 작은 창만 클릭을 받는다.
+        self.quick_overlay = PangyaQuickControlOverlay(self)
+        self.quick_overlay_timer = QTimer(self)
+        self.quick_overlay_timer.timeout.connect(self.update_quick_overlay_position)
+        self.quick_overlay_timer.start(250)
+        QTimer.singleShot(500, self.update_quick_overlay_position)
 
         # 숫자 OCR 자동 인식은 현재 보류.
         # 바람각도는 별도 캡처/클릭 방식으로 처리한다.
@@ -1507,6 +1798,136 @@ class PangyaControlWindow(QWidget):
         #     )
 
         #self.register_hotkey_from_settings()
+
+    def schedule_auto_result_refresh(self, delay_ms=20):
+        """퀵 버튼 클릭 직후 UI 색상 변경을 먼저 반영하고 계산은 짧게 뒤로 미룬다."""
+        if getattr(self, "_auto_result_refresh_scheduled", False):
+            return
+        self._auto_result_refresh_scheduled = True
+
+        def _run():
+            self._auto_result_refresh_scheduled = False
+            self.refresh_auto_result_overlay()
+
+        QTimer.singleShot(delay_ms, _run)
+
+    def select_quick_shot(self, shot_value):
+        """좌상단 퀵 오버레이에서 Shot을 클릭했을 때 계산기 콤보와 결과를 동기화한다."""
+        if not hasattr(self, "calc_shot_combo"):
+            return
+        idx = self.calc_shot_combo.findData(shot_value)
+        if idx >= 0 and self.calc_shot_combo.currentIndex() != idx:
+            self.calc_shot_combo.setCurrentIndex(idx)
+        self.last_auto_result_signature = None
+        self.update_backspin_button_state()
+        if hasattr(self, "quick_overlay"):
+            self.quick_overlay.update()
+        self.schedule_auto_result_refresh(20)
+
+    def select_quick_power_shot(self, power_shot_value):
+        """좌상단 퀵 오버레이에서 PowerShot을 클릭했을 때 계산기 콤보와 결과를 동기화한다."""
+        if not hasattr(self, "calc_power_shot_combo"):
+            return
+        idx = self.calc_power_shot_combo.findData(power_shot_value)
+        if idx >= 0 and self.calc_power_shot_combo.currentIndex() != idx:
+            self.calc_power_shot_combo.setCurrentIndex(idx)
+        self.last_auto_result_signature = None
+        if hasattr(self, "quick_overlay"):
+            self.quick_overlay.update()
+        self.schedule_auto_result_refresh(20)
+
+    def on_calc_power_shot_changed(self):
+        self.last_auto_result_signature = None
+        if hasattr(self, "quick_overlay"):
+            self.quick_overlay.update()
+        self.schedule_auto_result_refresh(20)
+
+    def update_quick_overlay_position(self):
+        """게임창 좌상단 상단부에 클릭 가능한 Shot/PS 창을 붙인다.
+
+        이 함수는 250ms마다 돌지만 비싼 WinAPI 호출은 위치/표시 상태가 바뀔 때만 수행한다.
+        """
+        qo = getattr(self, "quick_overlay", None)
+        if qo is None:
+            return
+
+        try:
+            enabled = bool(self.settings.get("show_quick_overlay_controls", True))
+            if hasattr(self, "show_quick_controls_check"):
+                enabled = self.show_quick_controls_check.isChecked()
+
+            if not enabled or not self.overlay.is_running or not self.overlay.target_hwnd:
+                if qo.isVisible():
+                    qo.hide()
+                return
+
+            if not bool(self.settings.get("show_result", True)):
+                if qo.isVisible():
+                    qo.hide()
+                return
+
+            try:
+                (
+                    left, top, right, bottom,
+                    window_left, window_top, window_right, window_bottom,
+                    client_left, client_top, client_right, client_bottom
+                ) = get_client_rect_on_screen(self.overlay.target_hwnd)
+            except Exception:
+                if qo.isVisible():
+                    qo.hide()
+                return
+
+            width = right - left
+            height = bottom - top
+            if width <= 0 or height <= 0:
+                if qo.isVisible():
+                    qo.hide()
+                return
+
+            base_w = max(1, int(self.settings.get("base_w", BASE_W)))
+            base_h = max(1, int(self.settings.get("base_h", BASE_H)))
+            scale_x = width / base_w
+            scale_y = height / base_h
+            scale = max(0.75, min(scale_x, scale_y))
+
+            panel_x = int(28 * scale_x)
+            panel_y = int(72 * scale_y)
+
+            qx = left + panel_x
+            qy = top + panel_y
+            qw = max(500, int(560 * scale))
+            qh = max(62, int(70 * scale))
+            geom = (int(qx), int(qy), int(qw), int(qh))
+
+            became_visible = False
+            if not qo.isVisible():
+                qo.setGeometry(*geom)
+                qo._last_geometry_tuple = geom
+                qo.apply_window_style()
+                qo.show()
+                qo.apply_capture_exclude_setting(force=True)
+                qo.raise_()
+                qo.update()
+                became_visible = True
+            else:
+                if qo._last_geometry_tuple != geom:
+                    qo.setGeometry(*geom)
+                    qo._last_geometry_tuple = geom
+                    qo.raise_()
+                    qo.update()
+
+            # 표시 중인 상태에서는 매 tick마다 style/affinity/update를 반복하지 않는다.
+            # 캡처 제외는 show 직후 1회와 체크박스 변경 시에만 force 적용한다.
+            if became_visible:
+                QTimer.singleShot(0, lambda: qo.apply_capture_exclude_setting(force=True))
+
+        except Exception as e:
+            print(f"[WARN] quick overlay position update 실패: {e}")
+            try:
+                if qo.isVisible():
+                    qo.hide()
+            except Exception:
+                pass
 
     def apply_control_window_capture_exclude(self):
         enabled = bool(self.settings.get("capture_exclude_enabled", True))
@@ -1654,6 +2075,7 @@ class PangyaControlWindow(QWidget):
         self.show_wind_check = QCheckBox("바람 각도")
         self.show_slope_check = QCheckBox("기울기 선")
         self.show_result_check = QCheckBox("결과")
+        self.show_quick_controls_check = QCheckBox("샷/PS 퀵선택")
         self.capture_exclude_check = QCheckBox("윈도우 캡처/녹화 제외")
 
         visible_layout.addWidget(self.show_cup_check)
@@ -1661,6 +2083,7 @@ class PangyaControlWindow(QWidget):
         visible_layout.addWidget(self.show_wind_check)
         visible_layout.addWidget(self.show_slope_check)
         visible_layout.addWidget(self.show_result_check)
+        visible_layout.addWidget(self.show_quick_controls_check)
         visible_layout.addWidget(self.capture_exclude_check)
 
         overlay_root.addWidget(visible_group)
@@ -1791,12 +2214,12 @@ class PangyaControlWindow(QWidget):
         self.ground_live_auto_check = QCheckBox("지면 자동 입력(DLL live)")
         self.club_live_auto_check = QCheckBox("클럽 자동 입력(DLL live)")
         self.wind_live_auto_check = QCheckBox("바람/각도 자동 입력(DLL live)")
-        self.slope_live_auto_check = QCheckBox("기울기 후보 자동 계산(DLL live)")
+        self.slope_live_auto_check = QCheckBox("기울기 단일 후보 자동 입력(DLL live, 저부하)")
         self.spin_curve_live_auto_check = QCheckBox("스핀/커브 자동 입력(DLL live)")
         self.slope_live_mode_combo = QComboBox()
-        self.slope_live_mode_combo.addItem("Slope X/Y 6개 비교: X/Y/MAG +/-", "XY_COMPARE")
-        self.slope_live_mode_combo.addItem("Result Matrix 8개 비교: R0C/R04/R14/R1C +/-", "MATRIX_COMPARE")
-        self.slope_live_mode_combo.addItem("추천 후보: -R0C / 0.00875", "R0C_MINUS")
+        self.slope_live_mode_combo.addItem("추천 후보: R0C- = -R0C / 0.00875 (자동/저부하)", "R0C_MINUS")
+        self.slope_live_mode_combo.addItem("수동 계산 버튼 전용: X/Y 6개 후보 비교", "XY_COMPARE")
+        self.slope_live_mode_combo.addItem("수동 계산 버튼 전용: Result Matrix 8개 후보 비교", "MATRIX_COMPARE")
         self.slope_live_mode_combo.addItem("후보 R1C+ = R1C / 0.00875", "R1C_PLUS")
         self.slope_live_mode_combo.addItem("후보 R14- = -R14 / 0.00875", "R14_MINUS")
         self.slope_live_mode_combo.addItem("후보 R04- = -R04 / 0.00875", "R04_MINUS")
@@ -1810,8 +2233,8 @@ class PangyaControlWindow(QWidget):
         self.slope_live_mode_combo.addItem("후보 X- = -X / 0.00875", "X_MINUS")
         self.slope_live_mode_combo.addItem("후보 Y+ = Y / 0.00875", "Y_PLUS")
         self.slope_live_mode_combo.addItem("후보 Y- = -Y / 0.00875", "Y_MINUS")
-        self.slope_live_mode_combo.addItem("구버전 4개 비교: scalar70/78 +/-", "SIGN_COMPARE")
-        self.slope_live_mode_combo.addItem("구버전 A/B 둘 다 계산", "SCALAR_COMPARE")
+        self.slope_live_mode_combo.addItem("수동 계산 버튼 전용: 구버전 4개 비교", "SIGN_COMPARE")
+        self.slope_live_mode_combo.addItem("수동 계산 버튼 전용: 구버전 A/B 비교", "SCALAR_COMPARE")
         self.slope_live_mode_combo.addItem("자동 입력 안 함", "OFF")
         self.memory_connect_btn = QPushButton("거리/고저 live 시작")
         self.memory_disconnect_btn = QPushButton("거리/고저 live 중지")
@@ -2044,6 +2467,7 @@ class PangyaControlWindow(QWidget):
             self.calc_load_btn.clicked.connect(self.on_calc_load_clicked)
             self.mycella_btn.clicked.connect(self.on_mycella_clicked)
             self.calc_shot_combo.currentIndexChanged.connect(self.on_calc_shot_changed)
+            self.calc_power_shot_combo.currentIndexChanged.connect(self.on_calc_power_shot_changed)
 
         if hasattr(self, "memory_connect_btn"):
             self.memory_connect_btn.clicked.connect(self.start_memory_probe)
@@ -2067,6 +2491,9 @@ class PangyaControlWindow(QWidget):
             self.spin_curve_live_auto_check.stateChanged.connect(self.on_spin_curve_live_auto_changed)
         if hasattr(self, "slope_live_mode_combo"):
             self.slope_live_mode_combo.currentIndexChanged.connect(self.on_slope_live_mode_changed)
+
+        if hasattr(self, "capture_exclude_check"):
+            self.capture_exclude_check.stateChanged.connect(self.on_capture_exclude_changed)
 
 
     def set_combo_by_data(self, combo, value):
@@ -2104,7 +2531,7 @@ class PangyaControlWindow(QWidget):
             "wind_live_json_path": self.wind_live_path_edit.text().strip() if hasattr(self, "wind_live_path_edit") else "",
             "slope_live_auto_input": self.slope_live_auto_check.isChecked() if hasattr(self, "slope_live_auto_check") else False,
             "slope_live_json_path": self.slope_live_path_edit.text().strip() if hasattr(self, "slope_live_path_edit") else "",
-            "slope_live_mode": self.slope_live_mode_combo.currentData() if hasattr(self, "slope_live_mode_combo") else "XY_COMPARE",
+            "slope_live_mode": self.slope_live_mode_combo.currentData() if hasattr(self, "slope_live_mode_combo") else "R0C_MINUS",
             "spin_curve_live_auto_input": self.spin_curve_live_auto_check.isChecked() if hasattr(self, "spin_curve_live_auto_check") else False,
             "spin_curve_live_json_path": self.spin_curve_live_path_edit.text().strip() if hasattr(self, "spin_curve_live_path_edit") else "",
             "mycella_shot_degree": self.mycella_shot_degree_edit.text().strip(),
@@ -2166,7 +2593,7 @@ class PangyaControlWindow(QWidget):
             self.spin_curve_live_path_edit.setText(str(s.get("spin_curve_live_json_path", "")))
         if hasattr(self, "slope_live_mode_combo"):
             
-            mode = s.get("slope_live_mode", "XY_COMPARE")
+            mode = s.get("slope_live_mode", "R0C_MINUS")
             legacy_map = {
                 "BOTH_COMPARE": "SCALAR_COMPARE",
                 "NORMAL_X": "SCALAR70_PLUS",
@@ -2223,12 +2650,11 @@ class PangyaControlWindow(QWidget):
         self.update_memory_values_from_game()
 
 
-    def read_json_file_retry(self, path, retries=3, delay_ms=25):
+    def read_json_file_retry(self, path, retries=1, delay_ms=0):
         """DLL live JSON 읽기.
 
-        DLL이 쓰는 순간 반쪽 파일이 될 수 있어 짧게 재시도한다.
-        추가로 파일 mtime/size가 이전과 같으면 json.load를 반복하지 않고
-        캐시된 dict를 반환해서 GUI 쪽 파일 I/O와 JSON 파싱 비용을 줄인다.
+        GUI 메인 스레드에서 호출되므로 여기서 sleep/processEvents를 절대 하지 않는다.
+        DLL이 파일을 쓰는 순간 반쪽 JSON이 보이면 이전 캐시값을 즉시 반환한다.
         """
         if not path:
             raise FileNotFoundError("live JSON path is empty")
@@ -2239,47 +2665,50 @@ class PangyaControlWindow(QWidget):
             self._live_json_cache = {}
             cache = self._live_json_cache
 
+        cached = cache.get(path)
+
         try:
             stat = os.stat(path)
             sig = (stat.st_mtime_ns, stat.st_size)
-            cached = cache.get(path)
             if cached and cached.get("sig") == sig:
                 return cached.get("data")
         except Exception:
-            sig = None
+            if cached and cached.get("data") is not None:
+                return cached.get("data")
+            raise
 
-        last_error = None
-        for _ in range(max(1, retries)):
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                try:
-                    stat = os.stat(path)
-                    sig = (stat.st_mtime_ns, stat.st_size)
-                except Exception:
-                    pass
-                cache[path] = {"sig": sig, "data": data}
-                return data
-            except Exception as e:
-                last_error = e
-                try:
-                    QApplication.processEvents()
-                except Exception:
-                    pass
-                time.sleep(delay_ms / 1000.0)
-        raise last_error
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            cache[path] = {"sig": sig, "data": data}
+            return data
+        except Exception:
+            # DLL write 중 반쪽 파일이면 UI를 멈추지 말고 이전 정상값 사용
+            if cached and cached.get("data") is not None:
+                return cached.get("data")
+            raise
 
     def find_existing_live_json_path(self, filename):
-        """수동 경로가 비어 있을 때 확인할 후보 경로들을 순서대로 검사한다."""
+        """수동 경로가 비어 있을 때 확인할 후보 경로들을 순서대로 검사한다.
+
+        logger DLL 표준 경로는 ProjectG127.exe 폴더의 logs\ 입니다.
+        다만 구버전/테스트 DLL이 plugins\에 JSON을 만든 경우도 있어서 fallback으로 같이 본다.
+        """
         paths = []
 
         target_exe = self.target_exe_edit.text().strip() if hasattr(self, "target_exe_edit") else "ProjectG127.exe"
         exe_path = self.find_process_exe_path(target_exe or "ProjectG127.exe")
         if exe_path:
-            paths.append(os.path.join(os.path.dirname(exe_path), "logs", filename))
+            exe_dir = os.path.dirname(exe_path)
+            paths.append(os.path.join(exe_dir, "logs", filename))
+            paths.append(os.path.join(exe_dir, "plugins", "logs", filename))
+            paths.append(os.path.join(exe_dir, "plugins", filename))
 
         paths.append(os.path.join(FORCED_CLIENT_LOG_DIR, filename))
+        paths.append(os.path.join(os.path.dirname(FORCED_CLIENT_LOG_DIR), "plugins", "logs", filename))
+        paths.append(os.path.join(os.path.dirname(FORCED_CLIENT_LOG_DIR), "plugins", filename))
         paths.append(os.path.join(get_app_dir(), "logs", filename))
+        paths.append(os.path.join(get_app_dir(), filename))
 
         # 중복 제거, 존재하는 파일 우선
         unique = []
@@ -2343,8 +2772,8 @@ class PangyaControlWindow(QWidget):
             keep_timer("ground_live_auto_check", "ground_live_timer", self.update_ground_live_from_file, 300)
             keep_timer("club_live_auto_check", "club_live_timer", self.update_club_live_from_file, 500)
             keep_timer("wind_live_auto_check", "wind_live_timer", self.update_wind_live_from_file, 300)
-            keep_timer("slope_live_auto_check", "slope_live_timer", self.update_slope_live_from_file, 300)
-            keep_timer("spin_curve_live_auto_check", "spin_curve_live_timer", self.update_spin_curve_live_from_file, 200)
+            keep_timer("slope_live_auto_check", "slope_live_timer", self.update_slope_live_from_file, 1200)
+            keep_timer("spin_curve_live_auto_check", "spin_curve_live_timer", self.update_spin_curve_live_from_file, 500)
 
         except Exception as e:
             print(f"[WARN] live timer watchdog 실패: {e}")
@@ -2629,9 +3058,12 @@ class PangyaControlWindow(QWidget):
                 self.slope_live_label.setText("기울기 후보: -")
 
     def on_slope_live_mode_changed(self):
+        # 모드 변경 시 한 번만 live 값을 반영하고 결과 갱신 예약.
+        # 비교 모드가 선택되어도 자동/live에서는 R0C_MINUS 1개로만 동작한다.
         if hasattr(self, "slope_live_auto_check") and self.slope_live_auto_check.isChecked():
             self.update_slope_live_from_file()
-
+        self.last_auto_result_signature = None
+        self.schedule_auto_result_refresh(50)
     def resolve_slope_live_json_path(self):
         manual = ""
         if hasattr(self, "slope_live_path_edit"):
@@ -2800,7 +3232,7 @@ class PangyaControlWindow(QWidget):
         try:
             if not os.path.exists(path):
                 self.last_slope_live_candidates = None
-                if hasattr(self, "slope_live_label"):
+                if hasattr(self, "slope_live_label") and self.slope_live_label.isVisible():
                     self.slope_live_label.setText("기울기 후보: live 파일 없음")
                 return
 
@@ -2808,7 +3240,7 @@ class PangyaControlWindow(QWidget):
 
             if not data.get("ok", False):
                 self.last_slope_live_candidates = None
-                if hasattr(self, "slope_live_label"):
+                if hasattr(self, "slope_live_label") and self.slope_live_label.isVisible():
                     self.slope_live_label.setText("기울기 후보: live 값 없음")
                 return
 
@@ -2816,10 +3248,15 @@ class PangyaControlWindow(QWidget):
             tick = data.get("tick")
             seq = data.get("seq")
 
-            usable_keys = ["X_PLUS", "X_MINUS", "Y_PLUS", "Y_MINUS", "MAG_PLUS", "MAG_MINUS", "R0C_PLUS", "R0C_MINUS", "R04_PLUS", "R04_MINUS", "R14_PLUS", "R14_MINUS", "R1C_PLUS", "R1C_MINUS", "A_PLUS", "A_MINUS", "B_PLUS", "B_MINUS", "LEGACY_A", "LEGACY_B"]
+            usable_keys = [
+                "X_PLUS", "X_MINUS", "Y_PLUS", "Y_MINUS", "MAG_PLUS", "MAG_MINUS",
+                "R0C_PLUS", "R0C_MINUS", "R04_PLUS", "R04_MINUS",
+                "R14_PLUS", "R14_MINUS", "R1C_PLUS", "R1C_MINUS",
+                "A_PLUS", "A_MINUS", "B_PLUS", "B_MINUS", "LEGACY_A", "LEGACY_B"
+            ]
             if not any(candidates.get(k) is not None for k in usable_keys):
                 self.last_slope_live_candidates = None
-                if hasattr(self, "slope_live_label"):
+                if hasattr(self, "slope_live_label") and self.slope_live_label.isVisible():
                     self.slope_live_label.setText("기울기 후보: 후보 필드 없음")
                 return
 
@@ -2829,41 +3266,32 @@ class PangyaControlWindow(QWidget):
             self.last_slope_live_candidates = candidates
             self.last_slope_live_tick = tick
 
-            mode = self.slope_live_mode_combo.currentData() if hasattr(self, "slope_live_mode_combo") else "XY_COMPARE"
-
-            chosen_map = {
-                "X_PLUS": "X_PLUS",
-                "X_MINUS": "X_MINUS",
-                "Y_PLUS": "Y_PLUS",
-                "Y_MINUS": "Y_MINUS",
-                "MAG_PLUS": "MAG_PLUS",
-                "MAG_MINUS": "MAG_MINUS",
-                "R0C_PLUS": "R0C_PLUS",
-                "R0C_MINUS": "R0C_MINUS",
-                "R04_PLUS": "R04_PLUS",
-                "R04_MINUS": "R04_MINUS",
-                "R14_PLUS": "R14_PLUS",
-                "R14_MINUS": "R14_MINUS",
-                "R1C_PLUS": "R1C_PLUS",
-                "R1C_MINUS": "R1C_MINUS",
-                "SCALAR70_PLUS": "A_PLUS",
-                "SCALAR70_MINUS": "A_MINUS",
-                "SCALAR78_PLUS": "B_PLUS",
-                "SCALAR78_MINUS": "B_MINUS",
-                "SCALAR70": "A_PLUS",
-                "SCALAR78": "B_PLUS",
-                "NORMAL_X": "LEGACY_A",
-                "AXIS_Z_X": "LEGACY_B",
-            }
-            chosen_key = chosen_map.get(mode)
+            # 자동/live 중에는 비교 모드를 절대 돌리지 않는다.
+            # XY_COMPARE/MATRIX_COMPARE가 선택되어 있어도 R0C_MINUS 1개만 입력/계산한다.
+            mode = self.slope_live_mode_combo.currentData() if hasattr(self, "slope_live_mode_combo") else "R0C_MINUS"
+            chosen_key = self._get_auto_slope_candidate_key(mode)
             chosen = candidates.get(chosen_key) if chosen_key else None
 
             if chosen is not None:
-                new_text = f"{chosen:.4f}"
-                if self.calc_slope_edit.text().strip() != new_text:
+                new_value = float(chosen)
+                new_text = f"{new_value:.4f}"
+
+                # slope 값은 DLL hook 특성상 아주 미세하게 흔들릴 수 있다.
+                # 너무 작은 변화까지 setText하면 자동 결과 재계산을 계속 유발하므로
+                # 0.005 미만 변화는 GUI 입력칸 갱신을 생략한다.
+                old_text = self.calc_slope_edit.text().strip()
+                do_update = True
+                try:
+                    old_value = float(old_text)
+                    do_update = abs(old_value - new_value) >= 0.005
+                except Exception:
+                    do_update = True
+
+                if do_update and old_text != new_text:
                     self.calc_slope_edit.setText(new_text)
 
-            if hasattr(self, "slope_live_label"):
+            # 디버그 라벨은 기본 숨김이다. 숨겨진 상태에서 긴 문자열을 매 tick 만들지 않는다.
+            if hasattr(self, "slope_live_label") and self.slope_live_label.isVisible():
                 display_path = path
                 if len(display_path) > 65:
                     display_path = "..." + display_path[-62:]
@@ -2873,9 +3301,7 @@ class PangyaControlWindow(QWidget):
                     return "-" if value is None else f"{value:.4f}"
 
                 self.slope_live_label.setText(
-                    f"SlopeX±:{fmt('X_PLUS')}/{fmt('X_MINUS')}  "
-                    f"SlopeY±:{fmt('Y_PLUS')}/{fmt('Y_MINUS')}  "
-                    f"MAG±:{fmt('MAG_PLUS')}/{fmt('MAG_MINUS')}  "
+                    f"auto={chosen_key or '-'} "
                     f"R0C±:{fmt('R0C_PLUS')}/{fmt('R0C_MINUS')}  "
                     f"R1C±:{fmt('R1C_PLUS')}/{fmt('R1C_MINUS')}  "
                     f"seq={seq} tick={tick}  {display_path}"
@@ -2884,9 +3310,8 @@ class PangyaControlWindow(QWidget):
         except Exception as e:
             print(f"[WARN] 기울기 live 값 읽기 실패: {e}")
             self.last_slope_live_candidates = None
-            if hasattr(self, "slope_live_label"):
+            if hasattr(self, "slope_live_label") and self.slope_live_label.isVisible():
                 self.slope_live_label.setText("기울기 후보: 읽기 실패")
-
     def on_spin_curve_live_auto_changed(self):
         self.ensure_live_timers()
         if hasattr(self, "spin_curve_live_auto_check") and not self.spin_curve_live_auto_check.isChecked():
@@ -2902,12 +3327,32 @@ class PangyaControlWindow(QWidget):
         if manual:
             return manual
 
+        cache = getattr(self, "_live_path_cache", None)
+        if cache is None:
+            self._live_path_cache = {}
+            cache = self._live_path_cache
+
+        cached = cache.get("spin_curve")
+        if cached and os.path.exists(cached):
+            return cached
+
+        # 표준 위치를 먼저 고정 확인한다. 구버전 plugins JSON은 fallback으로만 본다.
         target_exe = self.target_exe_edit.text().strip() if hasattr(self, "target_exe_edit") else "ProjectG127.exe"
         exe_path = self.find_process_exe_path(target_exe or "ProjectG127.exe")
         if exe_path:
-            return os.path.join(os.path.dirname(exe_path), "logs", "pangya_spin_curve_live.json")
+            logs_path = os.path.join(os.path.dirname(exe_path), "logs", "pangya_spin_curve_live.json")
+            if os.path.exists(logs_path):
+                cache["spin_curve"] = logs_path
+                return logs_path
 
-        return self.find_existing_live_json_path("pangya_spin_curve_live.json")
+        forced_logs_path = os.path.join(FORCED_CLIENT_LOG_DIR, "pangya_spin_curve_live.json")
+        if os.path.exists(forced_logs_path):
+            cache["spin_curve"] = forced_logs_path
+            return forced_logs_path
+
+        found = self.find_existing_live_json_path("pangya_spin_curve_live.json")
+        cache["spin_curve"] = found
+        return found
 
     def update_spin_curve_live_from_file(self):
         """pangya_spin_curve_live_logger.dll live JSON에서 spin/curve 값을 읽어 입력칸에 반영한다."""
@@ -2980,9 +3425,9 @@ class PangyaControlWindow(QWidget):
             if hasattr(self, "spin_curve_live_label"):
                 c_show = "-" if curve is None else f"{curve:.2f}"
                 s_show = "-" if spin is None else f"{spin:.2f}"
-                self.spin_curve_live_label.setText(
-                    f"스핀/커브: S{s_show}/{spin_max:.0f} C{c_show}/{curve_max:.0f} seq={seq} tick={tick}"
-                )
+                label_text = f"스핀/커브: S{s_show}/{spin_max:.0f} C{c_show}/{curve_max:.0f} seq={seq} tick={tick}"
+                if self.spin_curve_live_label.text() != label_text:
+                    self.spin_curve_live_label.setText(label_text)
 
             if changed:
                 self.last_auto_result_signature = None
@@ -3101,7 +3546,11 @@ class PangyaControlWindow(QWidget):
         self.last_calc_result = None
         self.last_calc_display = None
         self.last_calc_shot_type = None
+        self.last_auto_result_signature = None
         self.update_backspin_button_state()
+        if hasattr(self, "quick_overlay"):
+            self.quick_overlay.update()
+        self.refresh_auto_result_overlay()
 
     def update_overlay_result_from_calc(self, title, result, display, *, extra_lines=None):
         """마지막 계산 결과를 오버레이 좌상단 표시용 상태로 변환한다."""
@@ -3189,12 +3638,80 @@ class PangyaControlWindow(QWidget):
             line_ball_random=self.calc_line_ball_random_check.isChecked(),
         )
 
+    def _get_auto_slope_candidate_key(self, mode):
+        """자동/live 계산에서 사용할 slope 후보 1개만 고른다.
+
+        비교 모드(XY_COMPARE/MATRIX_COMPARE 등)는 계산 버튼에서만 의미가 있다.
+        live 자동 갱신에서는 GUI 렉 방지를 위해 항상 단일 후보로 fallback한다.
+        """
+        if mode in (None, "", "OFF"):
+            return None
+
+        chosen_map = {
+            "X_PLUS": "X_PLUS",
+            "X_MINUS": "X_MINUS",
+            "Y_PLUS": "Y_PLUS",
+            "Y_MINUS": "Y_MINUS",
+            "MAG_PLUS": "MAG_PLUS",
+            "MAG_MINUS": "MAG_MINUS",
+            "R0C_PLUS": "R0C_PLUS",
+            "R0C_MINUS": "R0C_MINUS",
+            "R04_PLUS": "R04_PLUS",
+            "R04_MINUS": "R04_MINUS",
+            "R14_PLUS": "R14_PLUS",
+            "R14_MINUS": "R14_MINUS",
+            "R1C_PLUS": "R1C_PLUS",
+            "R1C_MINUS": "R1C_MINUS",
+            "SCALAR70_PLUS": "A_PLUS",
+            "SCALAR70_MINUS": "A_MINUS",
+            "SCALAR78_PLUS": "B_PLUS",
+            "SCALAR78_MINUS": "B_MINUS",
+            "SCALAR70": "A_PLUS",
+            "SCALAR78": "B_PLUS",
+            "NORMAL_X": "LEGACY_A",
+            "AXIS_Z_X": "LEGACY_B",
+        }
+
+        if mode in chosen_map:
+            return chosen_map[mode]
+
+        # 비교 모드는 자동/live에서는 무조건 가벼운 기본 후보 1개로 대체.
+        if mode in ("XY_COMPARE", "MATRIX_COMPARE", "SIGN_COMPARE", "SCALAR_COMPARE", "BOTH_COMPARE"):
+            return "R0C_MINUS"
+
+        return "R0C_MINUS"
+
+    def _get_auto_slope_display_name(self, candidate_key):
+        name_map = {
+            "X_PLUS": "X+",
+            "X_MINUS": "X-",
+            "Y_PLUS": "Y+",
+            "Y_MINUS": "Y-",
+            "MAG_PLUS": "MAG+",
+            "MAG_MINUS": "MAG-",
+            "R0C_PLUS": "R0C+",
+            "R0C_MINUS": "R0C-",
+            "R04_PLUS": "R04+",
+            "R04_MINUS": "R04-",
+            "R14_PLUS": "R14+",
+            "R14_MINUS": "R14-",
+            "R1C_PLUS": "R1C+",
+            "R1C_MINUS": "R1C-",
+            "A_PLUS": "A+",
+            "A_MINUS": "A-",
+            "B_PLUS": "B+",
+            "B_MINUS": "B-",
+            "LEGACY_A": "구A",
+            "LEGACY_B": "구B",
+        }
+        return name_map.get(candidate_key, str(candidate_key or "현재"))
+
     def get_live_slope_overlay_specs(self):
         """
         결과 오버레이용 slope 후보를 만든다.
-        - live slope가 꺼져 있으면 현재 Slope 입력칸 1개만 사용한다.
-        - 단일 후보 모드이면 선택 후보 1개를 사용한다.
-        - 비교 모드이면 화면에 너무 길지 않도록 핵심 후보만 짧게 비교 표시한다.
+
+        자동/live에서는 후보 비교를 하지 않고 단일 후보 1개만 반환한다.
+        후보 전체 비교는 계산 버튼을 눌렀을 때 on_calc_clicked()에서만 수행한다.
         """
         manual_text = self.calc_slope_edit.text().strip() or "0"
         specs = [("현재", manual_text)]
@@ -3202,67 +3719,17 @@ class PangyaControlWindow(QWidget):
         if not (hasattr(self, "slope_live_auto_check") and self.slope_live_auto_check.isChecked()):
             return specs, "OFF"
 
-        # 최신 live JSON 후보를 반영한다. 실패해도 여기서는 팝업 없이 기존 후보만 사용한다.
-        try:
-            self.update_slope_live_from_file()
-        except Exception:
-            pass
-
         candidates = self.last_slope_live_candidates or {}
-        mode = self.slope_live_mode_combo.currentData() if hasattr(self, "slope_live_mode_combo") else "OFF"
+        mode = self.slope_live_mode_combo.currentData() if hasattr(self, "slope_live_mode_combo") else "R0C_MINUS"
+        candidate_key = self._get_auto_slope_candidate_key(mode)
 
-        single_map = {
-            "X_PLUS": ("X+", "X_PLUS"),
-            "X_MINUS": ("X-", "X_MINUS"),
-            "Y_PLUS": ("Y+", "Y_PLUS"),
-            "Y_MINUS": ("Y-", "Y_MINUS"),
-            "MAG_PLUS": ("MAG+", "MAG_PLUS"),
-            "MAG_MINUS": ("MAG-", "MAG_MINUS"),
-            "R0C_PLUS": ("R0C+", "R0C_PLUS"),
-            "R0C_MINUS": ("R0C-", "R0C_MINUS"),
-            "R04_PLUS": ("R04+", "R04_PLUS"),
-            "R04_MINUS": ("R04-", "R04_MINUS"),
-            "R14_PLUS": ("R14+", "R14_PLUS"),
-            "R14_MINUS": ("R14-", "R14_MINUS"),
-            "R1C_PLUS": ("R1C+", "R1C_PLUS"),
-            "R1C_MINUS": ("R1C-", "R1C_MINUS"),
-            "SCALAR70_PLUS": ("A+", "A_PLUS"),
-            "SCALAR70_MINUS": ("A-", "A_MINUS"),
-            "SCALAR78_PLUS": ("B+", "B_PLUS"),
-            "SCALAR78_MINUS": ("B-", "B_MINUS"),
-            "SCALAR70": ("A+", "A_PLUS"),
-            "SCALAR78": ("B+", "B_PLUS"),
-            "NORMAL_X": ("구A", "LEGACY_A"),
-            "AXIS_Z_X": ("구B", "LEGACY_B"),
-        }
-
-        compare_map = {
-            "XY_COMPARE": [("X+", "X_PLUS"), ("X-", "X_MINUS"), ("Y+", "Y_PLUS"), ("Y-", "Y_MINUS")],
-            "MATRIX_COMPARE": [("R0C-", "R0C_MINUS"), ("R1C+", "R1C_PLUS"), ("R14-", "R14_MINUS"), ("R04-", "R04_MINUS")],
-            "SIGN_COMPARE": [("A+", "A_PLUS"), ("A-", "A_MINUS"), ("B+", "B_PLUS"), ("B-", "B_MINUS")],
-            "SCALAR_COMPARE": [("구A", "LEGACY_A"), ("구B", "LEGACY_B")],
-            "BOTH_COMPARE": [("구A", "LEGACY_A"), ("구B", "LEGACY_B")],
-        }
-
-        if mode in single_map:
-            name, key = single_map[mode]
-            value = candidates.get(key)
+        if candidate_key:
+            value = candidates.get(candidate_key)
             if value is not None:
-                return [(name, f"{float(value):.4f}")], mode
-            return [("현재", manual_text), ("live대기", None)], mode
+                return [(self._get_auto_slope_display_name(candidate_key), f"{float(value):.4f}")], mode
 
-        if mode in compare_map:
-            live_specs = []
-            for name, key in compare_map[mode]:
-                value = candidates.get(key)
-                if value is not None:
-                    live_specs.append((name, f"{float(value):.4f}"))
-            if live_specs:
-                return live_specs, mode
-            return [("현재", manual_text), ("live대기", None)], mode
-
-        return specs, mode
-
+        # 아직 live 후보가 없으면 입력칸에 들어온 마지막 값만 사용한다.
+        return [("현재", manual_text), ("live대기", None)], mode
     def make_auto_result_signature(self):
         fields = [
             self.calc_power_edit.text(),
@@ -3290,22 +3757,23 @@ class PangyaControlWindow(QWidget):
             self.calc_smart_divisor_edit.text(),
             self.show_result_check.isChecked() if hasattr(self, "show_result_check") else True,
             self.slope_live_auto_check.isChecked() if hasattr(self, "slope_live_auto_check") else False,
-            self.slope_live_mode_combo.currentData() if hasattr(self, "slope_live_mode_combo") else "OFF",
+            self.slope_live_mode_combo.currentData() if hasattr(self, "slope_live_mode_combo") else "R0C_MINUS",
             self.ground_live_auto_check.isChecked() if hasattr(self, "ground_live_auto_check") else False,
-            self.last_ground_live_tick if hasattr(self, "last_ground_live_tick") else None,
             self.club_live_auto_check.isChecked() if hasattr(self, "club_live_auto_check") else False,
-            self.last_club_live_tick if hasattr(self, "last_club_live_tick") else None,
             self.spin_curve_live_auto_check.isChecked() if hasattr(self, "spin_curve_live_auto_check") else False,
-            self.last_spin_curve_live_tick if hasattr(self, "last_spin_curve_live_tick") else None,
         ]
 
-        candidates = self.last_slope_live_candidates or {}
-        for key in ["X_PLUS", "X_MINUS", "Y_PLUS", "Y_MINUS", "MAG_PLUS", "MAG_MINUS", "R0C_PLUS", "R0C_MINUS", "R04_PLUS", "R04_MINUS", "R14_PLUS", "R14_MINUS", "R1C_PLUS", "R1C_MINUS", "A_PLUS", "A_MINUS", "B_PLUS", "B_MINUS", "LEGACY_A", "LEGACY_B"]:
-            value = candidates.get(key)
-            fields.append(None if value is None else round(float(value), 4))
+        # 중요: slope 후보 전체를 signature에 넣지 않는다.
+        # DLL JSON의 result_matrix/normal 후보가 계속 미세 변화하면 자동 계산이 매번 다시 돌기 때문이다.
+        if hasattr(self, "slope_live_auto_check") and self.slope_live_auto_check.isChecked():
+            mode = self.slope_live_mode_combo.currentData() if hasattr(self, "slope_live_mode_combo") else "R0C_MINUS"
+            candidate_key = self._get_auto_slope_candidate_key(mode)
+            candidates = self.last_slope_live_candidates or {}
+            value = candidates.get(candidate_key) if candidate_key else None
+            fields.append(candidate_key)
+            fields.append(None if value is None else round(float(value), 3))
 
         return tuple(fields)
-
     def refresh_auto_result_overlay(self):
         """계산 버튼 없이도 좌상단 결과 오버레이를 계속 갱신한다.
 
@@ -3323,32 +3791,8 @@ class PangyaControlWindow(QWidget):
             return
 
         try:
-            # live JSON 자동 입력이 켜진 경우 먼저 입력칸을 최신화한다.
-            if hasattr(self, "ground_live_auto_check") and self.ground_live_auto_check.isChecked():
-                try:
-                    self.update_ground_live_from_file()
-                except Exception:
-                    pass
-            if hasattr(self, "club_live_auto_check") and self.club_live_auto_check.isChecked():
-                try:
-                    self.update_club_live_from_file()
-                except Exception:
-                    pass
-            if hasattr(self, "wind_live_auto_check") and self.wind_live_auto_check.isChecked():
-                try:
-                    self.update_wind_live_from_file()
-                except Exception:
-                    pass
-            if hasattr(self, "slope_live_auto_check") and self.slope_live_auto_check.isChecked():
-                try:
-                    self.update_slope_live_from_file()
-                except Exception:
-                    pass
-            if hasattr(self, "spin_curve_live_auto_check") and self.spin_curve_live_auto_check.isChecked():
-                try:
-                    self.update_spin_curve_live_from_file()
-                except Exception:
-                    pass
+            # live JSON 입력칸 갱신은 각 live timer에서만 수행한다.
+            # 여기서 다시 update_*를 호출하면 JSON 읽기와 setText가 중복되어 GUI가 끊긴다.
 
             signature = self.make_auto_result_signature()
             if signature == self.last_auto_result_signature:
@@ -3839,6 +4283,8 @@ class PangyaControlWindow(QWidget):
         self.update_backspin_button_state()
         self.calc_result_box.clear()
         self.overlay.set_calc_state(None)
+        if hasattr(self, "quick_overlay"):
+            self.quick_overlay.update()
         
 
     def on_mycella_clicked(self):
@@ -3851,6 +4297,19 @@ class PangyaControlWindow(QWidget):
             self.calc_slope_edit.setText(f"{slope_real:.3f}")
         except Exception as e:
             QMessageBox.warning(self, "Mycella 계산 실패", str(e))
+
+    def on_capture_exclude_changed(self):
+        """윈도우 캡처/녹화 제외 체크를 누르는 즉시 메인/퀵 오버레이에 반영한다."""
+        try:
+            enabled = bool(self.capture_exclude_check.isChecked()) if hasattr(self, "capture_exclude_check") else True
+            self.settings["capture_exclude_enabled"] = enabled
+            self.overlay.set_settings(self.settings)
+            self.apply_control_window_capture_exclude()
+            if hasattr(self, "quick_overlay"):
+                self.quick_overlay.apply_window_style(force=True)
+                self.quick_overlay.apply_capture_exclude_setting(force=True)
+        except Exception as e:
+            print(f"[WARN] 캡처 제외 즉시 반영 실패: {e}")
 
     def on_hotkey_capture_clicked(self):
         self.hotkey_edit.start_capture()
@@ -3888,6 +4347,8 @@ class PangyaControlWindow(QWidget):
         self.show_wind_check.setChecked(bool(s["show_wind"]))
         self.show_slope_check.setChecked(bool(s["show_slope"]))
         self.show_result_check.setChecked(bool(s.get("show_result", True)))
+        if hasattr(self, "show_quick_controls_check"):
+            self.show_quick_controls_check.setChecked(bool(s.get("show_quick_overlay_controls", True)))
         self.capture_exclude_check.setChecked(bool(s.get("capture_exclude_enabled", True)))
 
     def collect_settings_from_ui(self):
@@ -3919,6 +4380,7 @@ class PangyaControlWindow(QWidget):
             "show_wind": self.show_wind_check.isChecked(),
             "show_slope": self.show_slope_check.isChecked(),
             "show_result": self.show_result_check.isChecked(),
+            "show_quick_overlay_controls": self.show_quick_controls_check.isChecked() if hasattr(self, "show_quick_controls_check") else True,
             "capture_exclude_enabled": self.capture_exclude_check.isChecked(),
 
             "toggle_hotkey": self.hotkey_edit.text().strip() or DEFAULT_SETTINGS["toggle_hotkey"],
@@ -3945,6 +4407,11 @@ class PangyaControlWindow(QWidget):
 
         self.overlay.set_settings(self.settings)
         self.apply_control_window_capture_exclude()
+        if hasattr(self, "quick_overlay"):
+            self.quick_overlay.apply_window_style(force=True)
+            self.quick_overlay.apply_capture_exclude_setting(force=True)
+            QTimer.singleShot(0, lambda: self.quick_overlay.apply_capture_exclude_setting(force=True))
+            self.update_quick_overlay_position()
         self.register_hotkey_from_settings()
 
         if show_message:
@@ -3957,6 +4424,7 @@ class PangyaControlWindow(QWidget):
             return
 
         self.overlay.start_overlay()
+        self.update_quick_overlay_position()
 
         if self.auto_controller is not None:
             self.auto_controller.start()
@@ -3975,6 +4443,8 @@ class PangyaControlWindow(QWidget):
         self.stop_memory_probe()
 
         self.overlay.stop_overlay()
+        if hasattr(self, "quick_overlay"):
+            self.quick_overlay.hide()
         self.update_status()
 
     def on_apply_clicked(self):
@@ -4053,6 +4523,11 @@ class PangyaControlWindow(QWidget):
                     return True, 0
 
                 is_started = self.overlay.toggle_overlay()
+                if hasattr(self, "quick_overlay"):
+                    if is_started:
+                        self.update_quick_overlay_position()
+                    else:
+                        self.quick_overlay.hide()
 
                 if self.auto_controller is not None:
                     if is_started:
@@ -4075,6 +4550,13 @@ class PangyaControlWindow(QWidget):
             self.auto_controller.stop()
 
         self.stop_memory_probe()
+
+        if hasattr(self, "quick_overlay"):
+            try:
+                self.quick_overlay.hide()
+                self.quick_overlay.close()
+            except Exception:
+                pass
 
         self.overlay.stop_overlay()
         event.accept()
