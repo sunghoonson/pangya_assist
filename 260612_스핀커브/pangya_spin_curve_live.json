@@ -1,0 +1,17 @@
+{
+  "ok": true,
+  "source": "spin_curve_live_rescan_struct_signature",
+  "time": 1781245991.0878968,
+  "base_addr": "0x1904A758",
+  "curve_addr": "0x1904A770",
+  "spin_addr": "0x1904A774",
+  "curve": 1.7499966621398926,
+  "spin": 4.1500020027160645,
+  "curve_max": 23.0,
+  "spin_max": 30.0,
+  "curve_offset": 24,
+  "spin_offset": 28,
+  "curve_max_offset": 32,
+  "spin_max_offset": 36,
+  "rescan_count": 1
+}

@@ -93,12 +93,10 @@ except Exception as e:
     PangyaBoundingPanel = None
     print(f"[WARN] pangya_bounding_panel 모듈 로드 실패: {e}")
 
-try:
-    from pangya_memory_probe import PangyaMemoryProbe, MemoryProbeError
-except Exception as e:
-    PangyaMemoryProbe = None
-    MemoryProbeError = RuntimeError
-    print(f"[WARN] pangya_memory_probe 모듈 로드 실패: {e}")
+# 거리/고저차 자동 입력은 pangya_distance_height_logger.dll live JSON 방식으로 전환했습니다.
+# 기존 Python PangyaMemoryProbe hook은 더 이상 import/사용하지 않습니다.
+PangyaMemoryProbe = None
+MemoryProbeError = RuntimeError
 # =========================================================
 # 캡처/녹화 제외 유틸
 # =========================================================
@@ -185,6 +183,7 @@ DEFAULT_SETTINGS = {
     "show_grid": True,
     "show_wind": True,
     "show_slope": True,
+    "show_result": True,
 
     # 캡처/녹화 제외 옵션
     "capture_exclude_enabled": True,
@@ -364,8 +363,17 @@ DEFAULT_CALCULATOR_SETTINGS = {
     "line_ball": "0",
     "line_ball_random": False,
 
-    # ProjectG127.exe 메모리에서 남은거리/고저차 자동 입력
+    # pangya_distance_height_logger.dll live JSON에서 남은거리/고저차 자동 입력
     "memory_auto_input": False,
+    "distance_height_live_json_path": "",
+
+    # pangya_ground_logger.dll live JSON에서 현재 지면상태 자동 입력
+    "ground_live_auto_input": True,
+    "ground_live_json_path": "",
+
+    # pangya_club_logger.dll live JSON에서 현재 선택 클럽 자동 입력
+    "club_live_auto_input": False,
+    "club_live_json_path": "",
 
     # pangya_wind_logger.dll live JSON에서 바람세기/각도 자동 입력
     "wind_live_auto_input": False,
@@ -818,55 +826,67 @@ class PangyaOverlay(QWidget):
             return None
 
     def draw_calc_result_panel(self, painter, scale_x, scale_y):
+        """
+        계산기 탭에서 마지막으로 계산한 결과를 게임 화면 좌상단에 표시한다.
+        배경 박스는 그리지 않고, 글자 그림자만 넣어서 원래 게임 UI를 최대한 가리지 않는다.
+        """
+        if not self.settings.get("show_result", True):
+            return
+
         if self.calc_state is None:
             return
 
-        x = int(40 * scale_x)
-        y = int(120 * scale_y)
-        line_h = int(24 * scale_y)
+        lines = []
 
-        painter.setFont(QFont("Arial", 11))
+        # 새 방식: 계산기에서 넘겨주는 dict 기반 표시
+        if isinstance(self.calc_state, dict):
+            lines = [str(v) for v in self.calc_state.get("lines", []) if str(v).strip()]
 
-        # 배경
-        panel_w = int(360 * scale_x)
-        panel_h = int(170 * scale_y)
+        # 구버전 호환: auto_input / shot_results 구조가 들어온 경우
+        elif hasattr(self.calc_state, "auto_input") and hasattr(self.calc_state, "shot_results"):
+            detected = self.calc_state.auto_input
+            lines = [
+                f"거리: {detected.distance if detected.distance is not None else '-'}y",
+                f"고저: {detected.height if detected.height is not None else '-'}",
+                f"바람: {detected.wind if detected.wind is not None else '-'}",
+                f"각도: {detected.degree if detected.degree is not None else '-'}",
+            ]
 
-        painter.setPen(QPen(QColor(0, 0, 0, 180), 1))
-        painter.setBrush(QColor(0, 0, 0, 130))
-        painter.drawRect(x - 10, y - 25, panel_w, panel_h)
+            for shot_name in ["DUNK", "TOMAHAWK", "SPIKE", "COBRA"]:
+                result = self.calc_state.shot_results.get(shot_name)
 
-        painter.setBrush(Qt.NoBrush)
+                if result is None:
+                    continue
 
-        detected = self.calc_state.auto_input
+                if result.ok:
+                    lines.append(
+                        f"{shot_name}: {result.power_percent:.1f}% / {result.shot_yards:.1f}y / {result.board_cells:.3f}칸"
+                    )
+                else:
+                    lines.append(f"{shot_name}: 실패 - {result.message}")
 
-        lines = [
-            f"거리: {detected.distance if detected.distance is not None else '-'}y",
-            f"고저: {detected.height if detected.height is not None else '-'}",
-            f"바람: {detected.wind if detected.wind is not None else '-'}",
-            f"각도: {detected.degree if detected.degree is not None else '-'}",
-            "",
-        ]
+        if not lines:
+            return
 
-        for shot_name in ["DUNK", "TOMAHAWK", "SPIKE", "COBRA"]:
-            result = self.calc_state.shot_results.get(shot_name)
+        x = int(28 * scale_x)
+        y = int(72 * scale_y)
+        scale = max(0.75, min(scale_x, scale_y))
+        line_h = max(18, int(22 * scale))
 
-            if result is None:
-                continue
+        font = QFont("Malgun Gothic")
+        font.setPixelSize(max(15, int(18 * scale)))
+        font.setBold(True)
+        painter.setFont(font)
 
-            if result.ok:
-                lines.append(
-                    f"{shot_name}: {result.power_percent:.1f}% / {result.shot_yards:.1f}y / {result.board_cells:.3f}칸"
-                )
-            else:
-                lines.append(f"{shot_name}: 실패 - {result.message}")
-
+        # 배경은 완전 투명. 대신 검은 그림자를 2번 그려 가독성 확보.
         for idx, text in enumerate(lines):
             ty = y + idx * line_h
 
-            painter.setPen(QPen(QColor(0, 0, 0, 230), 1))
-            painter.drawText(x + 1, ty + 1, text)
+            painter.setPen(QPen(QColor(0, 0, 0, 235), 1))
+            painter.drawText(x + 2, ty + 2, text)
+            painter.drawText(x - 1, ty + 1, text)
 
-            painter.setPen(QPen(QColor(255, 255, 255, 240), 1))
+            painter.setPen(QPen(QColor(255, 255, 255, 250), 1))
             painter.drawText(x, ty, text)
 
     def start_overlay(self):
@@ -1409,11 +1429,27 @@ class PangyaControlWindow(QWidget):
 
         self.auto_controller = None
 
+        # 거리/고저차도 DLL live JSON 방식으로 읽는다.
+        # 기존 Python probe hook은 중지/재연결 문제가 있어서 더 이상 사용하지 않는다.
         self.memory_probe = None
         self.memory_timer = QTimer(self)
         self.memory_timer.timeout.connect(self.update_memory_values_from_game)
         self.last_memory_distance = None
         self.last_memory_height = None
+        self.last_memory_live_tick = None
+        self.last_memory_live_path = None
+
+        self.ground_live_timer = QTimer(self)
+        self.ground_live_timer.timeout.connect(self.update_ground_live_from_file)
+        self.last_ground_live_tick = None
+        self.last_ground_live_value = None
+        self.last_ground_live_path = None
+
+        self.club_live_timer = QTimer(self)
+        self.club_live_timer.timeout.connect(self.update_club_live_from_file)
+        self.last_club_live_tick = None
+        self.last_club_live_value = None
+        self.last_club_live_path = None
 
         self.wind_live_timer = QTimer(self)
         self.wind_live_timer.timeout.connect(self.update_wind_live_from_file)
@@ -1433,6 +1469,16 @@ class PangyaControlWindow(QWidget):
         self.live_watchdog_timer.timeout.connect(self.ensure_live_timers)
         self.live_watchdog_timer.start(1000)
         QTimer.singleShot(0, self.ensure_live_timers)
+
+        # 결과 오버레이 자동 갱신
+        # 계산 버튼을 누르지 않아도 계산기 입력값 / live JSON 값이 바뀌면
+        # 좌상단 결과 오버레이를 자동으로 다시 계산한다.
+        self.last_auto_result_signature = None
+        self.last_auto_result_error = None
+        self.auto_result_timer = QTimer(self)
+        self.auto_result_timer.timeout.connect(self.refresh_auto_result_overlay)
+        self.auto_result_timer.start(700)
+        QTimer.singleShot(300, self.refresh_auto_result_overlay)
 
         # 숫자 OCR 자동 인식은 현재 보류.
         # 바람각도는 별도 캡처/클릭 방식으로 처리한다.
@@ -1590,12 +1636,14 @@ class PangyaControlWindow(QWidget):
         self.show_grid_check = QCheckBox("눈금")
         self.show_wind_check = QCheckBox("바람 각도")
         self.show_slope_check = QCheckBox("기울기 선")
+        self.show_result_check = QCheckBox("결과")
         self.capture_exclude_check = QCheckBox("윈도우 캡처/녹화 제외")
 
         visible_layout.addWidget(self.show_cup_check)
         visible_layout.addWidget(self.show_grid_check)
         visible_layout.addWidget(self.show_wind_check)
         visible_layout.addWidget(self.show_slope_check)
+        visible_layout.addWidget(self.show_result_check)
         visible_layout.addWidget(self.capture_exclude_check)
 
         overlay_root.addWidget(visible_group)
@@ -1722,7 +1770,9 @@ class PangyaControlWindow(QWidget):
         memory_group = QGroupBox("메모리 자동 입력")
         memory_layout = QGridLayout(memory_group)
 
-        self.memory_auto_check = QCheckBox("거리/고저차 자동 입력")
+        self.memory_auto_check = QCheckBox("거리/고저차 자동 입력(DLL live)")
+        self.ground_live_auto_check = QCheckBox("지면 자동 입력(DLL live)")
+        self.club_live_auto_check = QCheckBox("클럽 자동 입력(DLL live)")
         self.wind_live_auto_check = QCheckBox("바람/각도 자동 입력(DLL live)")
         self.slope_live_auto_check = QCheckBox("기울기 후보 자동 계산(DLL live)")
         self.slope_live_mode_combo = QComboBox()
@@ -1745,13 +1795,28 @@ class PangyaControlWindow(QWidget):
         self.slope_live_mode_combo.addItem("구버전 4개 비교: scalar70/78 +/-", "SIGN_COMPARE")
         self.slope_live_mode_combo.addItem("구버전 A/B 둘 다 계산", "SCALAR_COMPARE")
         self.slope_live_mode_combo.addItem("자동 입력 안 함", "OFF")
-        self.memory_connect_btn = QPushButton("메모리 연결")
-        self.memory_disconnect_btn = QPushButton("메모리 중지")
-        self.memory_status_label = QLabel("상태: 연결 안 됨")
+        self.memory_connect_btn = QPushButton("거리/고저 live 시작")
+        self.memory_disconnect_btn = QPushButton("거리/고저 live 중지")
+        self.memory_status_label = QLabel("상태: live 감시 안 됨")
         self.memory_distance_label = QLabel("거리: -")
         self.memory_height_label = QLabel("고저: -")
+        self.ground_live_label = QLabel("지면: -")
+        self.club_live_label = QLabel("클럽: -")
         self.wind_live_label = QLabel("바람/signed각도: -")
         self.slope_live_label = QLabel("기울기 후보: -")
+        # 실사용 단계에서는 메모리/live 디버그 라벨 숨김
+        self.memory_distance_label.setVisible(False)
+        self.memory_height_label.setVisible(False)
+        self.ground_live_label.setVisible(False)
+        self.club_live_label.setVisible(False)
+        self.wind_live_label.setVisible(False)
+        self.slope_live_label.setVisible(False)
+        self.distance_height_live_path_edit = QLineEdit()
+        self.distance_height_live_path_edit.setPlaceholderText("비워두면 ProjectG127.exe 폴더의 logs\\pangya_distance_height_live.json 자동 탐색")
+        self.ground_live_path_edit = QLineEdit()
+        self.ground_live_path_edit.setPlaceholderText("비워두면 ProjectG127.exe 폴더의 logs\\pangya_ground_live.json 자동 탐색")
+        self.club_live_path_edit = QLineEdit()
+        self.club_live_path_edit.setPlaceholderText("비워두면 ProjectG127.exe 폴더의 logs\\pangya_club_live.json 자동 탐색")
         self.wind_live_path_edit = QLineEdit()
         self.wind_live_path_edit.setPlaceholderText("비워두면 ProjectG127.exe 폴더의 logs\\pangya_wind_live.json 자동 탐색")
         self.slope_live_path_edit = QLineEdit()
@@ -1760,30 +1825,42 @@ class PangyaControlWindow(QWidget):
         self.memory_disconnect_btn.setEnabled(False)
 
         memory_layout.addWidget(self.memory_auto_check, 0, 0)
-        memory_layout.addWidget(self.wind_live_auto_check, 0, 1)
-        memory_layout.addWidget(self.slope_live_auto_check, 0, 2)
-        memory_layout.addWidget(self.memory_connect_btn, 0, 3)
-        memory_layout.addWidget(self.memory_disconnect_btn, 0, 4)
-        memory_layout.addWidget(self.memory_status_label, 0, 5)
-        memory_layout.addWidget(self.memory_distance_label, 1, 0, 1, 2)
-        memory_layout.addWidget(self.memory_height_label, 1, 2, 1, 2)
-        memory_layout.addWidget(self.wind_live_label, 1, 4, 1, 2)
-        memory_layout.addWidget(self.slope_live_label, 2, 0, 1, 3)
-        memory_layout.addWidget(QLabel("기울기 모드"), 2, 3)
-        memory_layout.addWidget(self.slope_live_mode_combo, 2, 4, 1, 2)
-        memory_layout.addWidget(QLabel("바람 live JSON"), 3, 0)
-        memory_layout.addWidget(self.wind_live_path_edit, 3, 1, 1, 5)
-        memory_layout.addWidget(QLabel("기울기 live JSON"), 4, 0)
-        memory_layout.addWidget(self.slope_live_path_edit, 4, 1, 1, 5)
+        memory_layout.addWidget(self.ground_live_auto_check, 0, 1)
+        memory_layout.addWidget(self.club_live_auto_check, 0, 2)
+        memory_layout.addWidget(self.wind_live_auto_check, 0, 3)
+        memory_layout.addWidget(self.slope_live_auto_check, 0, 4)
+        memory_layout.addWidget(self.memory_connect_btn, 0, 5)
+        memory_layout.addWidget(self.memory_disconnect_btn, 0, 6)
+        memory_layout.addWidget(self.memory_status_label, 1, 0, 1, 7)
+        memory_layout.addWidget(self.memory_distance_label, 2, 0, 1, 2)
+        memory_layout.addWidget(self.memory_height_label, 2, 2, 1, 2)
+        memory_layout.addWidget(self.ground_live_label, 2, 4, 1, 1)
+        memory_layout.addWidget(self.club_live_label, 2, 5, 1, 2)
+        memory_layout.addWidget(self.wind_live_label, 3, 0, 1, 3)
+        memory_layout.addWidget(self.slope_live_label, 3, 3, 1, 4)
+        memory_layout.addWidget(QLabel("기울기 모드"), 4, 0)
+        memory_layout.addWidget(self.slope_live_mode_combo, 4, 1, 1, 6)
+        memory_layout.addWidget(QLabel("거리/고저 live JSON"), 5, 0)
+        memory_layout.addWidget(self.distance_height_live_path_edit, 5, 1, 1, 6)
+        memory_layout.addWidget(QLabel("지면 live JSON"), 6, 0)
+        memory_layout.addWidget(self.ground_live_path_edit, 6, 1, 1, 6)
+        memory_layout.addWidget(QLabel("클럽 live JSON"), 7, 0)
+        memory_layout.addWidget(self.club_live_path_edit, 7, 1, 1, 6)
+        memory_layout.addWidget(QLabel("바람 live JSON"), 8, 0)
+        memory_layout.addWidget(self.wind_live_path_edit, 8, 1, 1, 6)
+        memory_layout.addWidget(QLabel("기울기 live JSON"), 9, 0)
+        memory_layout.addWidget(self.slope_live_path_edit, 9, 1, 1, 6)
 
         memory_help = QLabel(
-            "거리/고저차는 기존 ProjectG127.exe 메모리 hook으로 읽고, "
+            "거리/고저차는 pangya_distance_height_logger.dll live JSON의 distance/height를 읽어 반영합니다. "
+            "지면상태는 pangya_ground_logger.dll live JSON의 ground를 읽어 Ground에 반영합니다. "
+            "클럽은 pangya_club_logger.dll live JSON의 club을 읽어 Club 선택에 반영합니다. "
             "바람은 pangya_wind_logger.dll live JSON의 wind를 읽고, 각도는 signed_degree를 읽어 Degree에 반영합니다. "
-            "기울기는 pangya_slope_logger.dll live JSON의 후보 A/B를 읽어 계산 결과를 비교 출력합니다. "
-            "관리자 권한으로 실행해야 하며, Cheat Engine 디버거 창은 닫고 사용하세요."
+            "기울기는 pangya_slope_logger.dll live JSON의 후보를 읽어 계산 결과를 비교 출력합니다. "
+            "오버레이에는 slope=0 기준 결과와 선택 기울기 반영 결과를 분리해서 표시합니다."
         )
         memory_help.setWordWrap(True)
-        memory_layout.addWidget(memory_help, 5, 0, 1, 6)
+        memory_layout.addWidget(memory_help, 10, 0, 1, 7)
 
         root.addWidget(memory_group)
 
@@ -1945,6 +2022,15 @@ class PangyaControlWindow(QWidget):
             self.memory_connect_btn.clicked.connect(self.start_memory_probe)
             self.memory_disconnect_btn.clicked.connect(self.stop_memory_probe)
 
+        if hasattr(self, "memory_auto_check"):
+            self.memory_auto_check.stateChanged.connect(self.on_memory_auto_changed)
+
+        if hasattr(self, "ground_live_auto_check"):
+            self.ground_live_auto_check.stateChanged.connect(self.on_ground_live_auto_changed)
+
+        if hasattr(self, "club_live_auto_check"):
+            self.club_live_auto_check.stateChanged.connect(self.on_club_live_auto_changed)
+
         if hasattr(self, "wind_live_auto_check"):
             self.wind_live_auto_check.stateChanged.connect(self.on_wind_live_auto_changed)
 
@@ -1980,6 +2066,11 @@ class PangyaControlWindow(QWidget):
             "line_ball": self.calc_line_ball_edit.text().strip(),
             "line_ball_random": self.calc_line_ball_random_check.isChecked(),
             "memory_auto_input": self.memory_auto_check.isChecked() if hasattr(self, "memory_auto_check") else False,
+            "distance_height_live_json_path": self.distance_height_live_path_edit.text().strip() if hasattr(self, "distance_height_live_path_edit") else "",
+            "ground_live_auto_input": self.ground_live_auto_check.isChecked() if hasattr(self, "ground_live_auto_check") else False,
+            "ground_live_json_path": self.ground_live_path_edit.text().strip() if hasattr(self, "ground_live_path_edit") else "",
+            "club_live_auto_input": self.club_live_auto_check.isChecked() if hasattr(self, "club_live_auto_check") else False,
+            "club_live_json_path": self.club_live_path_edit.text().strip() if hasattr(self, "club_live_path_edit") else "",
             "wind_live_auto_input": self.wind_live_auto_check.isChecked() if hasattr(self, "wind_live_auto_check") else False,
             "wind_live_json_path": self.wind_live_path_edit.text().strip() if hasattr(self, "wind_live_path_edit") else "",
             "slope_live_auto_input": self.slope_live_auto_check.isChecked() if hasattr(self, "slope_live_auto_check") else False,
@@ -2020,6 +2111,16 @@ class PangyaControlWindow(QWidget):
         self.calc_line_ball_random_check.setChecked(bool(s["line_ball_random"]))
         if hasattr(self, "memory_auto_check"):
             self.memory_auto_check.setChecked(bool(s.get("memory_auto_input", False)))
+        if hasattr(self, "distance_height_live_path_edit"):
+            self.distance_height_live_path_edit.setText(str(s.get("distance_height_live_json_path", "")))
+        if hasattr(self, "ground_live_auto_check"):
+            self.ground_live_auto_check.setChecked(bool(s.get("ground_live_auto_input", True)))
+        if hasattr(self, "ground_live_path_edit"):
+            self.ground_live_path_edit.setText(str(s.get("ground_live_json_path", "")))
+        if hasattr(self, "club_live_auto_check"):
+            self.club_live_auto_check.setChecked(bool(s.get("club_live_auto_input", False)))
+        if hasattr(self, "club_live_path_edit"):
+            self.club_live_path_edit.setText(str(s.get("club_live_json_path", "")))
         if hasattr(self, "wind_live_auto_check"):
             self.wind_live_auto_check.setChecked(bool(s.get("wind_live_auto_input", False)))
         if hasattr(self, "wind_live_path_edit"):
@@ -2071,48 +2172,20 @@ class PangyaControlWindow(QWidget):
             self.memory_status_label.setText(text)
 
     def start_memory_probe(self):
-        if PangyaMemoryProbe is None:
-            QMessageBox.warning(
-                self,
-                "메모리 자동 입력 오류",
-                "pangya_memory_probe.py를 불러오지 못했습니다. 같은 폴더에 파일이 있는지 확인하세요."
-            )
+        """거리/고저차 live JSON 감시 시작.
+
+        기존 버전처럼 Python에서 ProjectG127.exe에 직접 hook을 설치하지 않는다.
+        pangya_distance_height_logger.dll이 생성하는 logs\pangya_distance_height_live.json만 읽는다.
+        """
+        if self.memory_timer.isActive():
+            self.set_memory_status("상태: 이미 live 감시 중")
             return
 
-        if self.memory_probe is not None:
-            self.set_memory_status("상태: 이미 연결됨")
-            return
-
-        try:
-            probe = PangyaMemoryProbe(self.target_exe_edit.text().strip() or "ProjectG127.exe")
-            probe.attach()
-            probe.install_height_hook()
-            probe.install_distance_final_hook()
-
-            self.memory_probe = probe
-            self.memory_timer.start(250)
-
-            self.memory_connect_btn.setEnabled(False)
-            self.memory_disconnect_btn.setEnabled(True)
-            self.set_memory_status("상태: 연결됨 - 거리/고저차 대기 중")
-            print(f"[INFO] 메모리 자동 입력 연결 완료: {probe.debug_info()}")
-
-        except Exception as e:
-            try:
-                probe.close()
-            except Exception:
-                pass
-
-            self.memory_probe = None
-            self.memory_timer.stop()
-            self.memory_connect_btn.setEnabled(True)
-            self.memory_disconnect_btn.setEnabled(False)
-            self.set_memory_status("상태: 연결 실패")
-            QMessageBox.critical(
-                self,
-                "메모리 자동 입력 연결 실패",
-                f"{e}\n\n관리자 권한으로 실행했는지, Cheat Engine 디버거 창이 닫혀 있는지 확인하세요."
-            )
+        self.memory_timer.start(250)
+        self.memory_connect_btn.setEnabled(False)
+        self.memory_disconnect_btn.setEnabled(True)
+        self.set_memory_status("상태: DLL live 감시 중 - 거리/고저 대기")
+        self.update_memory_values_from_game()
 
 
     def read_json_file_retry(self, path, retries=3, delay_ms=25):
@@ -2155,9 +2228,50 @@ class PangyaControlWindow(QWidget):
 
         return unique[0] if unique else os.path.join(get_app_dir(), "logs", filename)
 
+    def resolve_distance_height_live_json_path(self):
+        # 1) 사용자가 직접 지정한 경로
+        manual = ""
+        if hasattr(self, "distance_height_live_path_edit"):
+            manual = self.distance_height_live_path_edit.text().strip().strip('"')
+
+        if manual:
+            return manual
+
+        # 2) 실행 중인 ProjectG127.exe 폴더의 logs\pangya_distance_height_live.json
+        target_exe = self.target_exe_edit.text().strip() if hasattr(self, "target_exe_edit") else "ProjectG127.exe"
+        exe_path = self.find_process_exe_path(target_exe or "ProjectG127.exe")
+        if exe_path:
+            return os.path.join(os.path.dirname(exe_path), "logs", "pangya_distance_height_live.json")
+
+        # 3) 고정 클라이언트 로그 폴더 / GUI 폴더 fallback
+        existing = self.find_existing_live_json_path("pangya_distance_height_live.json")
+        return existing
+
+
     def ensure_live_timers(self):
         """체크박스가 ON이면 Start 버튼을 누르지 않아도 live JSON 감시를 유지한다."""
         try:
+            if hasattr(self, "memory_auto_check") and self.memory_auto_check.isChecked():
+                if not self.memory_timer.isActive():
+                    self.memory_timer.start(250)
+                self.update_memory_values_from_game()
+            elif hasattr(self, "memory_timer") and self.memory_timer.isActive() and self.memory_probe is None:
+                self.memory_timer.stop()
+
+            if hasattr(self, "ground_live_auto_check") and self.ground_live_auto_check.isChecked():
+                if not self.ground_live_timer.isActive():
+                    self.ground_live_timer.start(250)
+                self.update_ground_live_from_file()
+            elif hasattr(self, "ground_live_timer") and self.ground_live_timer.isActive():
+                self.ground_live_timer.stop()
+
+            if hasattr(self, "club_live_auto_check") and self.club_live_auto_check.isChecked():
+                if not self.club_live_timer.isActive():
+                    self.club_live_timer.start(250)
+                self.update_club_live_from_file()
+            elif hasattr(self, "club_live_timer") and self.club_live_timer.isActive():
+                self.club_live_timer.stop()
+
             if hasattr(self, "wind_live_auto_check") and self.wind_live_auto_check.isChecked():
                 if not self.wind_live_timer.isActive():
                     self.wind_live_timer.start(250)
@@ -2174,6 +2288,150 @@ class PangyaControlWindow(QWidget):
         except Exception as e:
             print(f"[WARN] live timer watchdog 실패: {e}")
 
+
+    def on_memory_auto_changed(self):
+        self.ensure_live_timers()
+        if hasattr(self, "memory_auto_check") and not self.memory_auto_check.isChecked():
+            if hasattr(self, "memory_distance_label"):
+                self.memory_distance_label.setText("거리: -")
+            if hasattr(self, "memory_height_label"):
+                self.memory_height_label.setText("고저: -")
+            self.set_memory_status("상태: live 감시 안 됨")
+
+    def on_ground_live_auto_changed(self):
+        self.ensure_live_timers()
+        if hasattr(self, "ground_live_auto_check") and not self.ground_live_auto_check.isChecked():
+            if hasattr(self, "ground_live_label"):
+                self.ground_live_label.setText("지면: -")
+
+    def resolve_ground_live_json_path(self):
+        manual = ""
+        if hasattr(self, "ground_live_path_edit"):
+            manual = self.ground_live_path_edit.text().strip().strip('"')
+
+        if manual:
+            return manual
+
+        target_exe = self.target_exe_edit.text().strip() if hasattr(self, "target_exe_edit") else "ProjectG127.exe"
+        exe_path = self.find_process_exe_path(target_exe or "ProjectG127.exe")
+        if exe_path:
+            return os.path.join(os.path.dirname(exe_path), "logs", "pangya_ground_live.json")
+
+        return self.find_existing_live_json_path("pangya_ground_live.json")
+
+    def update_ground_live_from_file(self):
+        """pangya_ground_logger.dll live JSON에서 ground 값을 읽어 Ground 입력칸에 반영한다."""
+        if not hasattr(self, "ground_live_auto_check") or not self.ground_live_auto_check.isChecked():
+            return
+
+        path = self.resolve_ground_live_json_path()
+        self.last_ground_live_path = path
+
+        try:
+            if not os.path.exists(path):
+                if hasattr(self, "ground_live_label"):
+                    self.ground_live_label.setText("지면: live 파일 없음")
+                return
+
+            data = self.read_json_file_retry(path)
+
+            if not data.get("ok", False):
+                if hasattr(self, "ground_live_label"):
+                    self.ground_live_label.setText("지면: live 값 없음")
+                return
+
+            ground_ok = bool(data.get("ground_ok", data.get("ok", False)))
+            ground = int(round(float(data.get("ground")))) if ground_ok and data.get("ground") is not None else None
+
+            if ground is None:
+                if hasattr(self, "ground_live_label"):
+                    self.ground_live_label.setText("지면: 값 없음")
+                return
+
+            if not 0 <= ground <= 150:
+                if hasattr(self, "ground_live_label"):
+                    self.ground_live_label.setText(f"지면: 범위 밖 {ground}")
+                return
+
+            ground_text = str(ground)
+            if self.calc_ground_edit.text().strip() != ground_text:
+                self.calc_ground_edit.setText(ground_text)
+
+            self.last_ground_live_value = ground
+            self.last_ground_live_tick = data.get("tick")
+
+            if hasattr(self, "ground_live_label"):
+                self.ground_live_label.setText(f"지면: {ground_text}% tick={self.last_ground_live_tick}")
+
+        except Exception as e:
+            print(f"[WARN] 지면 live 값 읽기 실패: {e}")
+            if hasattr(self, "ground_live_label"):
+                self.ground_live_label.setText("지면: 읽기 실패")
+
+    def on_club_live_auto_changed(self):
+        self.ensure_live_timers()
+        if hasattr(self, "club_live_auto_check") and not self.club_live_auto_check.isChecked():
+            if hasattr(self, "club_live_label"):
+                self.club_live_label.setText("클럽: -")
+
+    def resolve_club_live_json_path(self):
+        manual = ""
+        if hasattr(self, "club_live_path_edit"):
+            manual = self.club_live_path_edit.text().strip().strip('"')
+
+        if manual:
+            return manual
+
+        target_exe = self.target_exe_edit.text().strip() if hasattr(self, "target_exe_edit") else "ProjectG127.exe"
+        exe_path = self.find_process_exe_path(target_exe or "ProjectG127.exe")
+        if exe_path:
+            return os.path.join(os.path.dirname(exe_path), "logs", "pangya_club_live.json")
+
+        return self.find_existing_live_json_path("pangya_club_live.json")
+
+    def update_club_live_from_file(self):
+        if not hasattr(self, "club_live_auto_check") or not self.club_live_auto_check.isChecked():
+            return
+
+        path = self.resolve_club_live_json_path()
+        self.last_club_live_path = path
+
+        try:
+            if not os.path.exists(path):
+                if hasattr(self, "club_live_label"):
+                    self.club_live_label.setText("클럽: live 파일 없음")
+                return
+
+            data = self.read_json_file_retry(path)
+
+            if not data.get("ok", False) or not data.get("club_ok", False):
+                if hasattr(self, "club_live_label"):
+                    self.club_live_label.setText("클럽: live 값 없음")
+                return
+
+            club = (data.get("club") or "").strip()
+            if not club:
+                if hasattr(self, "club_live_label"):
+                    self.club_live_label.setText("클럽: 값 없음")
+                return
+
+            idx = self.calc_club_combo.findData(club) if hasattr(self, "calc_club_combo") else -1
+            if idx >= 0 and self.calc_club_combo.currentIndex() != idx:
+                self.calc_club_combo.setCurrentIndex(idx)
+
+            self.last_club_live_value = club
+            self.last_club_live_tick = data.get("tick")
+
+            club_name = data.get("club_name") or (self.calc_club_combo.currentText() if hasattr(self, "calc_club_combo") else club)
+            seq = data.get("seq")
+
+            if hasattr(self, "club_live_label"):
+                self.club_live_label.setText(f"클럽: {club_name} ({club}) seq={seq} tick={self.last_club_live_tick}")
+
+        except Exception as e:
+            print(f"[WARN] 클럽 live 값 읽기 실패: {e}")
+            if hasattr(self, "club_live_label"):
+                self.club_live_label.setText("클럽: 읽기 실패")
 
     def on_wind_live_auto_changed(self):
         self.ensure_live_timers()
@@ -2569,74 +2827,89 @@ class PangyaControlWindow(QWidget):
                 self.slope_live_label.setText("기울기 후보: 읽기 실패")
 
     def stop_memory_probe(self):
-        # wind/slope live JSON timer는 메모리 hook과 독립적이다.
-        # 여기서 끄면 체크박스는 ON인데 라벨은 '-'로 멈추는 문제가 생긴다.
-
+        # 거리/고저 live JSON timer만 중지한다.
+        # wind/slope live JSON timer는 각 체크박스와 watchdog이 별도로 관리한다.
         if self.memory_timer.isActive():
             self.memory_timer.stop()
 
-        if self.memory_probe is not None:
-            try:
-                self.memory_probe.close()
-                print("[INFO] 메모리 자동 입력 hook 복구/종료 완료")
-            except Exception as e:
-                print(f"[WARN] 메모리 자동 입력 종료 실패: {e}")
-            finally:
-                self.memory_probe = None
+        self.memory_probe = None
 
         if hasattr(self, "memory_connect_btn"):
             self.memory_connect_btn.setEnabled(True)
             self.memory_disconnect_btn.setEnabled(False)
 
-        self.set_memory_status("상태: 연결 안 됨")
+        self.set_memory_status("상태: live 감시 안 됨")
         if hasattr(self, "memory_distance_label"):
             self.memory_distance_label.setText("거리: -")
         if hasattr(self, "memory_height_label"):
             self.memory_height_label.setText("고저: -")
-        if hasattr(self, "wind_live_label"):
-            self.wind_live_label.setText("바람/각도: -")
 
     def update_memory_values_from_game(self):
-        if self.memory_probe is None:
+        """pangya_distance_height_logger.dll live JSON에서 distance/height를 읽어 계산기 입력칸에 반영한다."""
+        if hasattr(self, "memory_auto_check") and not self.memory_auto_check.isChecked() and self.memory_probe is None:
             return
 
+        path = self.resolve_distance_height_live_json_path()
+        self.last_memory_live_path = path
+
         try:
-            distance = self.memory_probe.read_distance_final()
-            height = self.memory_probe.read_height()
+            if not os.path.exists(path):
+                self.set_memory_status("상태: 거리/고저 live 파일 없음")
+                return
+
+            data = self.read_json_file_retry(path)
+
+            if not data.get("ok", False):
+                self.set_memory_status("상태: 거리/고저 live 값 없음")
+                return
+
+            distance_ok = bool(data.get("distance_ok", False))
+            height_ok = bool(data.get("height_ok", False))
+            distance = float(data.get("distance")) if distance_ok and data.get("distance") is not None else None
+            height = float(data.get("height")) if height_ok and data.get("height") is not None else None
+            tick = data.get("tick")
 
             changed = False
 
             if distance is not None:
-                self.last_memory_distance = distance
-                if hasattr(self, "memory_distance_label"):
-                    self.memory_distance_label.setText(f"거리: {distance:.2f}y")
-                if hasattr(self, "memory_auto_check") and self.memory_auto_check.isChecked():
-                    current = self.calc_distance_edit.text().strip()
-                    new_text = f"{distance:.2f}"
-                    if current != new_text:
-                        self.calc_distance_edit.setText(new_text)
-                        changed = True
+                if not 0.0 <= distance <= 2000.0:
+                    distance = None
+                else:
+                    self.last_memory_distance = distance
+                    if hasattr(self, "memory_distance_label"):
+                        self.memory_distance_label.setText(f"거리: {distance:.2f}y")
+                    if hasattr(self, "memory_auto_check") and self.memory_auto_check.isChecked():
+                        new_text = f"{distance:.2f}"
+                        if self.calc_distance_edit.text().strip() != new_text:
+                            self.calc_distance_edit.setText(new_text)
+                            changed = True
 
             if height is not None:
-                self.last_memory_height = height
-                if hasattr(self, "memory_height_label"):
-                    self.memory_height_label.setText(f"고저: {height:.2f}m")
-                if hasattr(self, "memory_auto_check") and self.memory_auto_check.isChecked():
-                    current = self.calc_height_edit.text().strip()
-                    new_text = f"{height:.2f}"
-                    if current != new_text:
-                        self.calc_height_edit.setText(new_text)
-                        changed = True
+                if not -500.0 <= height <= 500.0:
+                    height = None
+                else:
+                    self.last_memory_height = height
+                    if hasattr(self, "memory_height_label"):
+                        self.memory_height_label.setText(f"고저: {height:.2f}m")
+                    if hasattr(self, "memory_auto_check") and self.memory_auto_check.isChecked():
+                        new_text = f"{height:.2f}"
+                        if self.calc_height_edit.text().strip() != new_text:
+                            self.calc_height_edit.setText(new_text)
+                            changed = True
+
+            self.last_memory_live_tick = tick
 
             if distance is not None or height is not None:
-                self.set_memory_status("상태: 연결됨 - 값 수신 중")
+                display_path = path
+                if len(display_path) > 65:
+                    display_path = "..." + display_path[-62:]
+                self.set_memory_status(f"상태: DLL live 값 수신 중 tick={tick} {display_path}")
             else:
-                self.set_memory_status("상태: 연결됨 - 샷 화면/값 대기 중")
+                self.set_memory_status("상태: DLL live 감시 중 - 샷 화면/값 대기")
 
         except Exception as e:
-            print(f"[WARN] 메모리 값 읽기 실패: {e}")
-            self.set_memory_status("상태: 읽기 실패 - 재연결 필요")
-            self.stop_memory_probe()
+            print(f"[WARN] 거리/고저 live 값 읽기 실패: {e}")
+            self.set_memory_status("상태: 거리/고저 live 읽기 실패")
 
     def read_calc_float(self, edit, name, default=0.0):
         text = edit.text().strip()
@@ -2663,6 +2936,358 @@ class PangyaControlWindow(QWidget):
         self.last_calc_display = None
         self.last_calc_shot_type = None
         self.update_backspin_button_state()
+
+    def update_overlay_result_from_calc(self, title, result, display, *, extra_lines=None):
+        """마지막 계산 결과를 오버레이 좌상단 표시용 상태로 변환한다."""
+        if result is None or display is None:
+            self.overlay.set_calc_state(None)
+            if hasattr(self, "last_auto_result_signature"):
+                self.last_auto_result_signature = None
+            return
+
+        shot_name = self.calc_shot_combo.currentText()
+
+        lines = [
+            str(title),
+            f"{shot_name}: {result.power_percent:.1f}% / {result.shot_yards:.1f}y",
+            f"장판: {display.get('board_cells_signed', display.get('board_cells', 0.0)):+.3f}칸",
+            f"스마트: {display.get('smart_cells_signed', display.get('smart_cells', 0.0)):+.2f}칸",
+            f"PB: {result.pb:+.2f} / Real: {result.real_pb:.2f}",
+            f"ground : {self.calc_ground_edit.text()}",
+            f"D{self.calc_distance_edit.text()} H{self.calc_height_edit.text()} W{self.calc_wind_edit.text()} A{self.calc_degree_edit.text()}",
+        ]
+
+        if extra_lines:
+            lines.extend(extra_lines)
+
+        self.overlay.set_calc_state({
+            "type": "calc_result",
+            "lines": lines,
+        })
+
+    def read_calc_float_silent(self, edit, default=None):
+        text = edit.text().strip()
+        if text == "":
+            if default is None:
+                raise ValueError("empty")
+            return float(default)
+        return float(text)
+
+    def build_display_for_result(self, result, yards_to_pb, yards_to_pba, yards_to_pba_plus, board_per_pb, smart_divisor):
+        pb_yards = result.pb * 0.2167
+        real_pb_yards = result.real_pb * 0.2167
+
+        board_cells_signed = result.pb * board_per_pb
+        board_cells_abs = abs(board_cells_signed)
+        smart_cells_signed = board_cells_signed / smart_divisor
+        smart_cells_abs = board_cells_abs / smart_divisor
+
+        return {
+            "board_cells": board_cells_signed,
+            "smart_cells": smart_cells_signed,
+            "board_cells_signed": board_cells_signed,
+            "board_cells_abs": board_cells_abs,
+            "smart_cells_signed": smart_cells_signed,
+            "smart_cells_abs": smart_cells_abs,
+            "board_per_pb": board_per_pb,
+            "smart_divisor": smart_divisor,
+            "yards_to_pb": yards_to_pb,
+            "yards_to_pba": yards_to_pba,
+            "yards_to_pba_plus": yards_to_pba_plus,
+            "custom_pb": pb_yards / yards_to_pb,
+            "custom_real_pb": real_pb_yards / yards_to_pb,
+            "custom_pba": pb_yards / yards_to_pba,
+            "custom_pba_plus": pb_yards / yards_to_pba_plus,
+        }
+
+    def run_calc_for_overlay(self, slope_value):
+        return calc_shot(
+            power=self.read_calc_float_silent(self.calc_power_edit, 31.0),
+            auxpart_pwr=self.read_calc_float_silent(self.calc_auxpart_edit, 0.0),
+            card_pwr=self.read_calc_float_silent(self.calc_card_edit, 0.0),
+            mascot_pwr=self.read_calc_float_silent(self.calc_mascot_edit, 0.0),
+            card_ps_pwr=self.read_calc_float_silent(self.calc_card_ps_edit, 0.0),
+            club=self.calc_club_combo.currentData(),
+            shot=self.calc_shot_combo.currentData(),
+            power_shot=self.calc_power_shot_combo.currentData(),
+            distance=self.read_calc_float_silent(self.calc_distance_edit, 0.0),
+            height=self.read_calc_float_silent(self.calc_height_edit, 0.0),
+            wind=self.read_calc_float_silent(self.calc_wind_edit, 0.0),
+            degree=self.read_calc_float_silent(self.calc_degree_edit, 0.0),
+            ground=self.read_calc_float_silent(self.calc_ground_edit, 100.0),
+            spin=self.read_calc_float_silent(self.calc_spin_edit, 0.0),
+            curve=self.read_calc_float_silent(self.calc_curve_edit, 0.0),
+            slope=str(slope_value),
+            line_ball=self.read_calc_float_silent(self.calc_line_ball_edit, 0.0),
+            line_ball_random=self.calc_line_ball_random_check.isChecked(),
+        )
+
+    def get_live_slope_overlay_specs(self):
+        """
+        결과 오버레이용 slope 후보를 만든다.
+        - live slope가 꺼져 있으면 현재 Slope 입력칸 1개만 사용한다.
+        - 단일 후보 모드이면 선택 후보 1개를 사용한다.
+        - 비교 모드이면 화면에 너무 길지 않도록 핵심 후보만 짧게 비교 표시한다.
+        """
+        manual_text = self.calc_slope_edit.text().strip() or "0"
+        specs = [("현재", manual_text)]
+
+        if not (hasattr(self, "slope_live_auto_check") and self.slope_live_auto_check.isChecked()):
+            return specs, "OFF"
+
+        # 최신 live JSON 후보를 반영한다. 실패해도 여기서는 팝업 없이 기존 후보만 사용한다.
+        try:
+            self.update_slope_live_from_file()
+        except Exception:
+            pass
+
+        candidates = self.last_slope_live_candidates or {}
+        mode = self.slope_live_mode_combo.currentData() if hasattr(self, "slope_live_mode_combo") else "OFF"
+
+        single_map = {
+            "X_PLUS": ("X+", "X_PLUS"),
+            "X_MINUS": ("X-", "X_MINUS"),
+            "Y_PLUS": ("Y+", "Y_PLUS"),
+            "Y_MINUS": ("Y-", "Y_MINUS"),
+            "MAG_PLUS": ("MAG+", "MAG_PLUS"),
+            "MAG_MINUS": ("MAG-", "MAG_MINUS"),
+            "R0C_PLUS": ("R0C+", "R0C_PLUS"),
+            "R0C_MINUS": ("R0C-", "R0C_MINUS"),
+            "R04_PLUS": ("R04+", "R04_PLUS"),
+            "R04_MINUS": ("R04-", "R04_MINUS"),
+            "R14_PLUS": ("R14+", "R14_PLUS"),
+            "R14_MINUS": ("R14-", "R14_MINUS"),
+            "R1C_PLUS": ("R1C+", "R1C_PLUS"),
+            "R1C_MINUS": ("R1C-", "R1C_MINUS"),
+            "SCALAR70_PLUS": ("A+", "A_PLUS"),
+            "SCALAR70_MINUS": ("A-", "A_MINUS"),
+            "SCALAR78_PLUS": ("B+", "B_PLUS"),
+            "SCALAR78_MINUS": ("B-", "B_MINUS"),
+            "SCALAR70": ("A+", "A_PLUS"),
+            "SCALAR78": ("B+", "B_PLUS"),
+            "NORMAL_X": ("구A", "LEGACY_A"),
+            "AXIS_Z_X": ("구B", "LEGACY_B"),
+        }
+
+        compare_map = {
+            "XY_COMPARE": [("X+", "X_PLUS"), ("X-", "X_MINUS"), ("Y+", "Y_PLUS"), ("Y-", "Y_MINUS")],
+            "MATRIX_COMPARE": [("R0C-", "R0C_MINUS"), ("R1C+", "R1C_PLUS"), ("R14-", "R14_MINUS"), ("R04-", "R04_MINUS")],
+            "SIGN_COMPARE": [("A+", "A_PLUS"), ("A-", "A_MINUS"), ("B+", "B_PLUS"), ("B-", "B_MINUS")],
+            "SCALAR_COMPARE": [("구A", "LEGACY_A"), ("구B", "LEGACY_B")],
+            "BOTH_COMPARE": [("구A", "LEGACY_A"), ("구B", "LEGACY_B")],
+        }
+
+        if mode in single_map:
+            name, key = single_map[mode]
+            value = candidates.get(key)
+            if value is not None:
+                return [(name, f"{float(value):.4f}")], mode
+            return [("현재", manual_text), ("live대기", None)], mode
+
+        if mode in compare_map:
+            live_specs = []
+            for name, key in compare_map[mode]:
+                value = candidates.get(key)
+                if value is not None:
+                    live_specs.append((name, f"{float(value):.4f}"))
+            if live_specs:
+                return live_specs, mode
+            return [("현재", manual_text), ("live대기", None)], mode
+
+        return specs, mode
+
+    def make_auto_result_signature(self):
+        fields = [
+            self.calc_power_edit.text(),
+            self.calc_auxpart_edit.text(),
+            self.calc_card_edit.text(),
+            self.calc_mascot_edit.text(),
+            self.calc_card_ps_edit.text(),
+            self.calc_club_combo.currentData(),
+            self.calc_shot_combo.currentData(),
+            self.calc_power_shot_combo.currentData(),
+            self.calc_distance_edit.text(),
+            self.calc_height_edit.text(),
+            self.calc_wind_edit.text(),
+            self.calc_degree_edit.text(),
+            self.calc_ground_edit.text(),
+            self.calc_spin_edit.text(),
+            self.calc_curve_edit.text(),
+            self.calc_slope_edit.text(),
+            self.calc_line_ball_edit.text(),
+            self.calc_line_ball_random_check.isChecked(),
+            self.calc_yards_to_pb_edit.text(),
+            self.calc_yards_to_pba_edit.text(),
+            self.calc_yards_to_pba_plus_edit.text(),
+            self.calc_board_per_pb_edit.text(),
+            self.calc_smart_divisor_edit.text(),
+            self.show_result_check.isChecked() if hasattr(self, "show_result_check") else True,
+            self.slope_live_auto_check.isChecked() if hasattr(self, "slope_live_auto_check") else False,
+            self.slope_live_mode_combo.currentData() if hasattr(self, "slope_live_mode_combo") else "OFF",
+            self.ground_live_auto_check.isChecked() if hasattr(self, "ground_live_auto_check") else False,
+            self.last_ground_live_tick if hasattr(self, "last_ground_live_tick") else None,
+            self.club_live_auto_check.isChecked() if hasattr(self, "club_live_auto_check") else False,
+            self.last_club_live_tick if hasattr(self, "last_club_live_tick") else None,
+        ]
+
+        candidates = self.last_slope_live_candidates or {}
+        for key in ["X_PLUS", "X_MINUS", "Y_PLUS", "Y_MINUS", "MAG_PLUS", "MAG_MINUS", "R0C_PLUS", "R0C_MINUS", "R04_PLUS", "R04_MINUS", "R14_PLUS", "R14_MINUS", "R1C_PLUS", "R1C_MINUS", "A_PLUS", "A_MINUS", "B_PLUS", "B_MINUS", "LEGACY_A", "LEGACY_B"]:
+            value = candidates.get(key)
+            fields.append(None if value is None else round(float(value), 4))
+
+        return tuple(fields)
+
+    def refresh_auto_result_overlay(self):
+        """계산 버튼 없이도 좌상단 결과 오버레이를 계속 갱신한다.
+
+        중요:
+        - 기본 결과는 항상 slope_break=0 기준으로 계산한다.
+        - 기울기 live가 켜져 있으면 선택/후보 기울기 결과를 별도 줄로 추가한다.
+        """
+        if calc_shot is None:
+            return
+
+        if not hasattr(self, "show_result_check") or not self.show_result_check.isChecked():
+            if self.overlay.calc_state is not None:
+                self.overlay.set_calc_state(None)
+            self.last_auto_result_signature = None
+            return
+
+        try:
+            # live JSON 자동 입력이 켜진 경우 먼저 입력칸을 최신화한다.
+            if hasattr(self, "ground_live_auto_check") and self.ground_live_auto_check.isChecked():
+                try:
+                    self.update_ground_live_from_file()
+                except Exception:
+                    pass
+            if hasattr(self, "club_live_auto_check") and self.club_live_auto_check.isChecked():
+                try:
+                    self.update_club_live_from_file()
+                except Exception:
+                    pass
+            if hasattr(self, "wind_live_auto_check") and self.wind_live_auto_check.isChecked():
+                try:
+                    self.update_wind_live_from_file()
+                except Exception:
+                    pass
+            if hasattr(self, "slope_live_auto_check") and self.slope_live_auto_check.isChecked():
+                try:
+                    self.update_slope_live_from_file()
+                except Exception:
+                    pass
+
+            signature = self.make_auto_result_signature()
+            if signature == self.last_auto_result_signature:
+                return
+            self.last_auto_result_signature = signature
+
+            yards_to_pb = self.read_calc_float_silent(self.calc_yards_to_pb_edit, 0.2167)
+            yards_to_pba = self.read_calc_float_silent(self.calc_yards_to_pba_edit, 0.8668)
+            yards_to_pba_plus = self.read_calc_float_silent(self.calc_yards_to_pba_plus_edit, 1.032)
+            board_per_pb = self.read_calc_float_silent(self.calc_board_per_pb_edit, 0.2121)
+            smart_divisor = self.read_calc_float_silent(self.calc_smart_divisor_edit, 4.0)
+
+            if yards_to_pb == 0 or yards_to_pba == 0 or yards_to_pba_plus == 0 or smart_divisor == 0:
+                raise ValueError("표시 단위 0")
+
+            slope_specs, slope_mode = self.get_live_slope_overlay_specs()
+            shot_name = self.calc_shot_combo.currentText()
+
+            valid_results = []
+
+            base_result = self.run_calc_for_overlay("0")
+            if not base_result.ok:
+                lines = ["실시간 결과", f"계산 실패: {base_result.message}"]
+            else:
+                base_display = self.build_display_for_result(
+                    base_result,
+                    yards_to_pb,
+                    yards_to_pba,
+                    yards_to_pba_plus,
+                    board_per_pb,
+                    smart_divisor,
+                )
+                valid_results.append((base_result, base_display))
+
+                lines = [
+                    "실시간 결과",
+                    f"{shot_name}  D{self.calc_distance_edit.text()} H{self.calc_height_edit.text()} W{self.calc_wind_edit.text()} A{self.calc_degree_edit.text()}",
+                    f"club : {self.calc_club_combo.currentText()}",
+                    f"ground : {self.calc_ground_edit.text()}",
+                    f"기본(기울기0): {base_result.power_percent:.1f}% / {base_result.shot_yards:.1f}y / {base_display['board_cells_signed']:+.3f}칸 / PB{base_result.pb:+.2f}",
+                ]
+
+                live_values = [(n, v) for n, v in slope_specs if v is not None]
+                live_enabled = hasattr(self, "slope_live_auto_check") and self.slope_live_auto_check.isChecked()
+
+                if live_enabled and live_values:
+                    for name, slope_value in live_values:
+                        # 같은 0값을 중복으로 보여줄 필요는 없다.
+                        try:
+                            if abs(float(slope_value)) < 0.00005:
+                                continue
+                        except Exception:
+                            pass
+
+                        result = self.run_calc_for_overlay(slope_value)
+                        if result.ok:
+                            display = self.build_display_for_result(
+                                result,
+                                yards_to_pb,
+                                yards_to_pba,
+                                yards_to_pba_plus,
+                                board_per_pb,
+                                smart_divisor,
+                            )
+                            valid_results.append((result, display))
+                            lines.append(
+                                f"{name}(기울기): {result.power_percent:.1f}% / {result.shot_yards:.1f}y / "
+                                f"{display['board_cells_signed']:+.3f}칸 / PB{result.pb:+.2f} / S{float(slope_value):+.4f}"
+                            )
+                        else:
+                            lines.append(f"{name}(기울기): 실패")
+                elif live_enabled:
+                    lines.append(f"Slope live 대기: {slope_mode}")
+                else:
+                    manual_slope = self.calc_slope_edit.text().strip() or "0"
+                    try:
+                        manual_is_zero = abs(float(manual_slope)) < 0.00005
+                    except Exception:
+                        manual_is_zero = False
+
+                    if not manual_is_zero:
+                        result = self.run_calc_for_overlay(manual_slope)
+                        if result.ok:
+                            display = self.build_display_for_result(
+                                result,
+                                yards_to_pb,
+                                yards_to_pba,
+                                yards_to_pba_plus,
+                                board_per_pb,
+                                smart_divisor,
+                            )
+                            valid_results.append((result, display))
+                            lines.append(
+                                f"수동기울기: {result.power_percent:.1f}% / {result.shot_yards:.1f}y / "
+                                f"{display['board_cells_signed']:+.3f}칸 / PB{result.pb:+.2f} / S{float(manual_slope):+.4f}"
+                            )
+
+            if valid_results:
+                # BackSpin 버튼 호환을 위해 마지막 자동 계산 결과도 보관한다.
+                # 기본 결과를 우선값으로 둔다.
+                self.last_calc_result, self.last_calc_display = valid_results[0]
+                self.last_calc_shot_type = self.calc_shot_combo.currentData()
+                self.update_backspin_button_state()
+
+            self.overlay.set_calc_state({"type": "calc_result", "lines": lines})
+            self.last_auto_result_error = None
+
+        except Exception as e:
+            # 입력 중에는 숫자가 비는 순간이 자주 있으므로 팝업을 띄우지 않고 짧게만 표시한다.
+            err = str(e)
+            if err != self.last_auto_result_error:
+                self.overlay.set_calc_state({"type": "calc_result", "lines": ["실시간 결과", "입력값 대기/오류", err[:48]]})
+                self.last_auto_result_error = err
 
     def on_calc_clicked(self):
         if calc_shot is None:
@@ -2765,7 +3390,8 @@ class PangyaControlWindow(QWidget):
                 ])
 
             manual_slope_text = self.calc_slope_edit.text().strip() or "0"
-            result = run_calc_with_slope(manual_slope_text)
+            base_slope_text = "0"
+            result = run_calc_with_slope(base_slope_text)
 
             if not result.ok:
                 self.last_calc_result = None
@@ -2773,6 +3399,7 @@ class PangyaControlWindow(QWidget):
                 self.last_calc_shot_type = None
                 self.update_backspin_button_state()
                 self.calc_result_box.setPlainText(result.message)
+                self.overlay.set_calc_state({"type": "calc_result", "lines": ["계산 실패", result.message]})
                 return
 
             display = build_display(result)
@@ -2783,7 +3410,17 @@ class PangyaControlWindow(QWidget):
             self.update_backspin_button_state()
 
             output = []
-            append_result_block(output, "[수동/현재 Slope]", result, display, manual_slope_text)
+            append_result_block(output, "[기본 Slope 0]", result, display, base_slope_text)
+
+            try:
+                manual_is_zero = abs(float(manual_slope_text)) < 0.00005
+            except Exception:
+                manual_is_zero = False
+
+            if not manual_is_zero:
+                manual_result = run_calc_with_slope(manual_slope_text)
+                manual_display = build_display(manual_result) if manual_result.ok else {}
+                append_result_block(output, "[수동/현재 Slope]", manual_result, manual_display, manual_slope_text)
 
             slope_mode = self.slope_live_mode_combo.currentData() if hasattr(self, "slope_live_mode_combo") else "OFF"
             slope_live_enabled = hasattr(self, "slope_live_auto_check") and self.slope_live_auto_check.isChecked()
@@ -2916,11 +3553,16 @@ class PangyaControlWindow(QWidget):
                 f"Club={self.calc_club_combo.currentText()}, Shot={self.calc_shot_combo.currentText()}, PowerShot={self.calc_power_shot_combo.currentText()}",
                 f"Distance={self.calc_distance_edit.text()}, Height={self.calc_height_edit.text()}, Wind={self.calc_wind_edit.text()}, Degree={self.calc_degree_edit.text()}",
                 f"Ground={self.calc_ground_edit.text()}, Spin={self.calc_spin_edit.text()}, Curve={self.calc_curve_edit.text()}, Slope={self.calc_slope_edit.text()}",
+                f"ground : {self.calc_ground_edit.text()}",
             ])
 
             self.calc_result_box.setPlainText("\n".join(output))
+            self.update_overlay_result_from_calc("계산 결과", result, display, extra_lines=[f"Slope: 기본 0", f"현재 Slope 입력: {manual_slope_text}"])
+            self.last_auto_result_signature = None
+            self.refresh_auto_result_overlay()
 
         except Exception as e:
+            self.overlay.set_calc_state({"type": "calc_result", "lines": ["계산 실패", str(e)]})
             QMessageBox.critical(self, "계산 실패", str(e))
 
     def on_backspin_clicked(self):
@@ -2983,9 +3625,11 @@ class PangyaControlWindow(QWidget):
                 f"Club={self.calc_club_combo.currentText()}, Shot={self.calc_shot_combo.currentText()}, PowerShot={self.calc_power_shot_combo.currentText()}",
                 f"Distance={self.calc_distance_edit.text()}, Height={self.calc_height_edit.text()}, Wind={self.calc_wind_edit.text()}, Degree={self.calc_degree_edit.text()}",
                 f"Ground={self.calc_ground_edit.text()}, Spin={self.calc_spin_edit.text()}, Curve={self.calc_curve_edit.text()}, Slope={self.calc_slope_edit.text()}",
+                f"ground : {self.calc_ground_edit.text()}",
             ]
 
             self.calc_result_box.setPlainText("\n".join(output))
+            self.update_overlay_result_from_calc("계산 결과", result, display)
 
         except Exception as e:
             QMessageBox.critical(self, "BackSpin 계산 실패", str(e))
@@ -3019,6 +3663,7 @@ class PangyaControlWindow(QWidget):
         self.last_calc_shot_type = None
         self.update_backspin_button_state()
         self.calc_result_box.clear()
+        self.overlay.set_calc_state(None)
         
 
     def on_mycella_clicked(self):
@@ -3067,6 +3712,7 @@ class PangyaControlWindow(QWidget):
         self.show_grid_check.setChecked(bool(s["show_grid"]))
         self.show_wind_check.setChecked(bool(s["show_wind"]))
         self.show_slope_check.setChecked(bool(s["show_slope"]))
+        self.show_result_check.setChecked(bool(s.get("show_result", True)))
         self.capture_exclude_check.setChecked(bool(s.get("capture_exclude_enabled", True)))
 
     def collect_settings_from_ui(self):
@@ -3097,6 +3743,7 @@ class PangyaControlWindow(QWidget):
             "show_grid": self.show_grid_check.isChecked(),
             "show_wind": self.show_wind_check.isChecked(),
             "show_slope": self.show_slope_check.isChecked(),
+            "show_result": self.show_result_check.isChecked(),
             "capture_exclude_enabled": self.capture_exclude_check.isChecked(),
 
             "toggle_hotkey": self.hotkey_edit.text().strip() or DEFAULT_SETTINGS["toggle_hotkey"],
