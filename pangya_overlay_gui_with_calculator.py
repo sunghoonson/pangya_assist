@@ -144,7 +144,7 @@ BASE_W = 2048
 BASE_H = 1152
 
 DEBUG_LOG_INTERVAL_SEC = 2.0
-TRACK_INTERVAL_MS = 10
+TRACK_INTERVAL_MS = 33
 FORCED_CLIENT_LOG_DIR = r"C:\Pangya_US8JP\RELEASE SRV4\@Client EXE\logs"
 
 WIND_ANGLE_STEP = 5
@@ -387,6 +387,10 @@ DEFAULT_CALCULATOR_SETTINGS = {
     "slope_live_auto_input": False,
     "slope_live_json_path": "",
     "slope_live_mode": "XY_COMPARE",
+
+    # pangya_spin_curve_live_logger.dll live JSON에서 스핀/커브 자동 입력
+    "spin_curve_live_auto_input": True,
+    "spin_curve_live_json_path": "",
 
     "mycella_shot_degree": "0",
     "mycella_align_degree": "0",
@@ -969,7 +973,11 @@ class PangyaOverlay(QWidget):
             return
 
         target_exe = self.settings["target_exe"]
-        self.target_hwnd = find_window_by_process_name(target_exe)
+
+        # psutil EnumWindows/process scan은 비용이 크므로 매 프레임 수행하지 않는다.
+        # 기존 hwnd가 살아 있으면 재사용하고, 사라졌을 때만 다시 찾는다.
+        if not self.target_hwnd or not win32gui.IsWindow(self.target_hwnd):
+            self.target_hwnd = find_window_by_process_name(target_exe)
 
         if not self.target_hwnd:
             self.hide()
@@ -1463,6 +1471,15 @@ class PangyaControlWindow(QWidget):
         self.last_slope_live_path = None
         self.last_slope_live_candidates = None
 
+        self.spin_curve_live_timer = QTimer(self)
+        self.spin_curve_live_timer.timeout.connect(self.update_spin_curve_live_from_file)
+        self.last_spin_curve_live_tick = None
+        self.last_spin_curve_live_path = None
+        self.last_spin_curve_live_value = None
+
+        # live JSON 읽기 캐시: 같은 파일/mtime/size이면 json.load를 반복하지 않는다.
+        self._live_json_cache = {}
+
         # live JSON은 오버레이 Start/Stop이나 메모리 연결 상태와 독립적으로 감시한다.
         # 기존 버전은 메모리 중지/Start 순서에 따라 wind/slope timer가 꺼진 채 남는 문제가 있었다.
         self.live_watchdog_timer = QTimer(self)
@@ -1775,6 +1792,7 @@ class PangyaControlWindow(QWidget):
         self.club_live_auto_check = QCheckBox("클럽 자동 입력(DLL live)")
         self.wind_live_auto_check = QCheckBox("바람/각도 자동 입력(DLL live)")
         self.slope_live_auto_check = QCheckBox("기울기 후보 자동 계산(DLL live)")
+        self.spin_curve_live_auto_check = QCheckBox("스핀/커브 자동 입력(DLL live)")
         self.slope_live_mode_combo = QComboBox()
         self.slope_live_mode_combo.addItem("Slope X/Y 6개 비교: X/Y/MAG +/-", "XY_COMPARE")
         self.slope_live_mode_combo.addItem("Result Matrix 8개 비교: R0C/R04/R14/R1C +/-", "MATRIX_COMPARE")
@@ -1804,6 +1822,7 @@ class PangyaControlWindow(QWidget):
         self.club_live_label = QLabel("클럽: -")
         self.wind_live_label = QLabel("바람/signed각도: -")
         self.slope_live_label = QLabel("기울기 후보: -")
+        self.spin_curve_live_label = QLabel("스핀/커브: -")
         # 실사용 단계에서는 메모리/live 디버그 라벨 숨김
         self.memory_distance_label.setVisible(False)
         self.memory_height_label.setVisible(False)
@@ -1811,6 +1830,7 @@ class PangyaControlWindow(QWidget):
         self.club_live_label.setVisible(False)
         self.wind_live_label.setVisible(False)
         self.slope_live_label.setVisible(False)
+        self.spin_curve_live_label.setVisible(False)
         self.distance_height_live_path_edit = QLineEdit()
         self.distance_height_live_path_edit.setPlaceholderText("비워두면 ProjectG127.exe 폴더의 logs\\pangya_distance_height_live.json 자동 탐색")
         self.ground_live_path_edit = QLineEdit()
@@ -1821,6 +1841,8 @@ class PangyaControlWindow(QWidget):
         self.wind_live_path_edit.setPlaceholderText("비워두면 ProjectG127.exe 폴더의 logs\\pangya_wind_live.json 자동 탐색")
         self.slope_live_path_edit = QLineEdit()
         self.slope_live_path_edit.setPlaceholderText("비워두면 ProjectG127.exe 폴더의 logs\\pangya_slope_live.json 자동 탐색")
+        self.spin_curve_live_path_edit = QLineEdit()
+        self.spin_curve_live_path_edit.setPlaceholderText("비워두면 ProjectG127.exe 폴더의 logs\\pangya_spin_curve_live.json 자동 탐색")
 
         self.memory_disconnect_btn.setEnabled(False)
 
@@ -1829,27 +1851,31 @@ class PangyaControlWindow(QWidget):
         memory_layout.addWidget(self.club_live_auto_check, 0, 2)
         memory_layout.addWidget(self.wind_live_auto_check, 0, 3)
         memory_layout.addWidget(self.slope_live_auto_check, 0, 4)
-        memory_layout.addWidget(self.memory_connect_btn, 0, 5)
-        memory_layout.addWidget(self.memory_disconnect_btn, 0, 6)
-        memory_layout.addWidget(self.memory_status_label, 1, 0, 1, 7)
+        memory_layout.addWidget(self.spin_curve_live_auto_check, 0, 5)
+        memory_layout.addWidget(self.memory_connect_btn, 0, 6)
+        memory_layout.addWidget(self.memory_disconnect_btn, 0, 7)
+        memory_layout.addWidget(self.memory_status_label, 1, 0, 1, 8)
         memory_layout.addWidget(self.memory_distance_label, 2, 0, 1, 2)
         memory_layout.addWidget(self.memory_height_label, 2, 2, 1, 2)
         memory_layout.addWidget(self.ground_live_label, 2, 4, 1, 1)
         memory_layout.addWidget(self.club_live_label, 2, 5, 1, 2)
+        memory_layout.addWidget(self.spin_curve_live_label, 2, 7, 1, 1)
         memory_layout.addWidget(self.wind_live_label, 3, 0, 1, 3)
-        memory_layout.addWidget(self.slope_live_label, 3, 3, 1, 4)
+        memory_layout.addWidget(self.slope_live_label, 3, 3, 1, 5)
         memory_layout.addWidget(QLabel("기울기 모드"), 4, 0)
-        memory_layout.addWidget(self.slope_live_mode_combo, 4, 1, 1, 6)
+        memory_layout.addWidget(self.slope_live_mode_combo, 4, 1, 1, 7)
         memory_layout.addWidget(QLabel("거리/고저 live JSON"), 5, 0)
-        memory_layout.addWidget(self.distance_height_live_path_edit, 5, 1, 1, 6)
+        memory_layout.addWidget(self.distance_height_live_path_edit, 5, 1, 1, 7)
         memory_layout.addWidget(QLabel("지면 live JSON"), 6, 0)
-        memory_layout.addWidget(self.ground_live_path_edit, 6, 1, 1, 6)
+        memory_layout.addWidget(self.ground_live_path_edit, 6, 1, 1, 7)
         memory_layout.addWidget(QLabel("클럽 live JSON"), 7, 0)
-        memory_layout.addWidget(self.club_live_path_edit, 7, 1, 1, 6)
+        memory_layout.addWidget(self.club_live_path_edit, 7, 1, 1, 7)
         memory_layout.addWidget(QLabel("바람 live JSON"), 8, 0)
-        memory_layout.addWidget(self.wind_live_path_edit, 8, 1, 1, 6)
+        memory_layout.addWidget(self.wind_live_path_edit, 8, 1, 1, 7)
         memory_layout.addWidget(QLabel("기울기 live JSON"), 9, 0)
-        memory_layout.addWidget(self.slope_live_path_edit, 9, 1, 1, 6)
+        memory_layout.addWidget(self.slope_live_path_edit, 9, 1, 1, 7)
+        memory_layout.addWidget(QLabel("스핀/커브 live JSON"), 10, 0)
+        memory_layout.addWidget(self.spin_curve_live_path_edit, 10, 1, 1, 7)
 
         memory_help = QLabel(
             "거리/고저차는 pangya_distance_height_logger.dll live JSON의 distance/height를 읽어 반영합니다. "
@@ -1857,10 +1883,11 @@ class PangyaControlWindow(QWidget):
             "클럽은 pangya_club_logger.dll live JSON의 club을 읽어 Club 선택에 반영합니다. "
             "바람은 pangya_wind_logger.dll live JSON의 wind를 읽고, 각도는 signed_degree를 읽어 Degree에 반영합니다. "
             "기울기는 pangya_slope_logger.dll live JSON의 후보를 읽어 계산 결과를 비교 출력합니다. "
+            "스핀/커브는 pangya_spin_curve_live_logger.dll live JSON의 spin/curve를 읽어 Spin/Curve에 반영합니다. "
             "오버레이에는 slope=0 기준 결과와 선택 기울기 반영 결과를 분리해서 표시합니다."
         )
         memory_help.setWordWrap(True)
-        memory_layout.addWidget(memory_help, 10, 0, 1, 7)
+        memory_layout.addWidget(memory_help, 11, 0, 1, 8)
 
         root.addWidget(memory_group)
 
@@ -2036,6 +2063,8 @@ class PangyaControlWindow(QWidget):
 
         if hasattr(self, "slope_live_auto_check"):
             self.slope_live_auto_check.stateChanged.connect(self.on_slope_live_auto_changed)
+        if hasattr(self, "spin_curve_live_auto_check"):
+            self.spin_curve_live_auto_check.stateChanged.connect(self.on_spin_curve_live_auto_changed)
         if hasattr(self, "slope_live_mode_combo"):
             self.slope_live_mode_combo.currentIndexChanged.connect(self.on_slope_live_mode_changed)
 
@@ -2076,6 +2105,8 @@ class PangyaControlWindow(QWidget):
             "slope_live_auto_input": self.slope_live_auto_check.isChecked() if hasattr(self, "slope_live_auto_check") else False,
             "slope_live_json_path": self.slope_live_path_edit.text().strip() if hasattr(self, "slope_live_path_edit") else "",
             "slope_live_mode": self.slope_live_mode_combo.currentData() if hasattr(self, "slope_live_mode_combo") else "XY_COMPARE",
+            "spin_curve_live_auto_input": self.spin_curve_live_auto_check.isChecked() if hasattr(self, "spin_curve_live_auto_check") else False,
+            "spin_curve_live_json_path": self.spin_curve_live_path_edit.text().strip() if hasattr(self, "spin_curve_live_path_edit") else "",
             "mycella_shot_degree": self.mycella_shot_degree_edit.text().strip(),
             "mycella_align_degree": self.mycella_align_degree_edit.text().strip(),
             "mycella_slope_break": self.mycella_slope_break_edit.text().strip(),
@@ -2129,6 +2160,10 @@ class PangyaControlWindow(QWidget):
             self.slope_live_auto_check.setChecked(bool(s.get("slope_live_auto_input", False)))
         if hasattr(self, "slope_live_path_edit"):
             self.slope_live_path_edit.setText(str(s.get("slope_live_json_path", "")))
+        if hasattr(self, "spin_curve_live_auto_check"):
+            self.spin_curve_live_auto_check.setChecked(bool(s.get("spin_curve_live_auto_input", True)))
+        if hasattr(self, "spin_curve_live_path_edit"):
+            self.spin_curve_live_path_edit.setText(str(s.get("spin_curve_live_json_path", "")))
         if hasattr(self, "slope_live_mode_combo"):
             
             mode = s.get("slope_live_mode", "XY_COMPARE")
@@ -2189,12 +2224,42 @@ class PangyaControlWindow(QWidget):
 
 
     def read_json_file_retry(self, path, retries=3, delay_ms=25):
-        """DLL이 JSON을 쓰는 순간 GUI가 읽으면 반쪽 파일이 될 수 있어서 짧게 재시도한다."""
+        """DLL live JSON 읽기.
+
+        DLL이 쓰는 순간 반쪽 파일이 될 수 있어 짧게 재시도한다.
+        추가로 파일 mtime/size가 이전과 같으면 json.load를 반복하지 않고
+        캐시된 dict를 반환해서 GUI 쪽 파일 I/O와 JSON 파싱 비용을 줄인다.
+        """
+        if not path:
+            raise FileNotFoundError("live JSON path is empty")
+
+        path = os.path.abspath(path)
+        cache = getattr(self, "_live_json_cache", None)
+        if cache is None:
+            self._live_json_cache = {}
+            cache = self._live_json_cache
+
+        try:
+            stat = os.stat(path)
+            sig = (stat.st_mtime_ns, stat.st_size)
+            cached = cache.get(path)
+            if cached and cached.get("sig") == sig:
+                return cached.get("data")
+        except Exception:
+            sig = None
+
         last_error = None
         for _ in range(max(1, retries)):
             try:
                 with open(path, "r", encoding="utf-8") as f:
-                    return json.load(f)
+                    data = json.load(f)
+                try:
+                    stat = os.stat(path)
+                    sig = (stat.st_mtime_ns, stat.st_size)
+                except Exception:
+                    pass
+                cache[path] = {"sig": sig, "data": data}
+                return data
             except Exception as e:
                 last_error = e
                 try:
@@ -2249,42 +2314,38 @@ class PangyaControlWindow(QWidget):
 
 
     def ensure_live_timers(self):
-        """체크박스가 ON이면 Start 버튼을 누르지 않아도 live JSON 감시를 유지한다."""
+        """체크박스가 ON이면 Start 버튼과 독립적으로 live JSON timer를 유지한다.
+
+        기존 코드처럼 watchdog에서 update_*를 매번 직접 호출하면 각 live timer와
+        auto_result_timer가 같은 JSON을 중복으로 읽는다. 여기서는 timer 시작/중지만
+        관리하고, 최초 시작 시에만 한 번 즉시 갱신한다.
+        """
         try:
-            if hasattr(self, "memory_auto_check") and self.memory_auto_check.isChecked():
-                if not self.memory_timer.isActive():
-                    self.memory_timer.start(250)
-                self.update_memory_values_from_game()
-            elif hasattr(self, "memory_timer") and self.memory_timer.isActive() and self.memory_probe is None:
-                self.memory_timer.stop()
+            def keep_timer(check_attr, timer_attr, update_func=None, interval=300):
+                check = getattr(self, check_attr, None)
+                timer = getattr(self, timer_attr, None)
+                if check is None or timer is None:
+                    return
 
-            if hasattr(self, "ground_live_auto_check") and self.ground_live_auto_check.isChecked():
-                if not self.ground_live_timer.isActive():
-                    self.ground_live_timer.start(250)
-                self.update_ground_live_from_file()
-            elif hasattr(self, "ground_live_timer") and self.ground_live_timer.isActive():
-                self.ground_live_timer.stop()
+                if check.isChecked():
+                    if not timer.isActive():
+                        timer.start(interval)
+                        if update_func is not None:
+                            try:
+                                update_func()
+                            except Exception:
+                                pass
+                else:
+                    if timer.isActive():
+                        timer.stop()
 
-            if hasattr(self, "club_live_auto_check") and self.club_live_auto_check.isChecked():
-                if not self.club_live_timer.isActive():
-                    self.club_live_timer.start(250)
-                self.update_club_live_from_file()
-            elif hasattr(self, "club_live_timer") and self.club_live_timer.isActive():
-                self.club_live_timer.stop()
+            keep_timer("memory_auto_check", "memory_timer", self.update_memory_values_from_game, 300)
+            keep_timer("ground_live_auto_check", "ground_live_timer", self.update_ground_live_from_file, 300)
+            keep_timer("club_live_auto_check", "club_live_timer", self.update_club_live_from_file, 500)
+            keep_timer("wind_live_auto_check", "wind_live_timer", self.update_wind_live_from_file, 300)
+            keep_timer("slope_live_auto_check", "slope_live_timer", self.update_slope_live_from_file, 300)
+            keep_timer("spin_curve_live_auto_check", "spin_curve_live_timer", self.update_spin_curve_live_from_file, 200)
 
-            if hasattr(self, "wind_live_auto_check") and self.wind_live_auto_check.isChecked():
-                if not self.wind_live_timer.isActive():
-                    self.wind_live_timer.start(250)
-                self.update_wind_live_from_file()
-            elif hasattr(self, "wind_live_timer") and self.wind_live_timer.isActive():
-                self.wind_live_timer.stop()
-
-            if hasattr(self, "slope_live_auto_check") and self.slope_live_auto_check.isChecked():
-                if not self.slope_live_timer.isActive():
-                    self.slope_live_timer.start(250)
-                self.update_slope_live_from_file()
-            elif hasattr(self, "slope_live_timer") and self.slope_live_timer.isActive():
-                self.slope_live_timer.stop()
         except Exception as e:
             print(f"[WARN] live timer watchdog 실패: {e}")
 
@@ -2826,6 +2887,111 @@ class PangyaControlWindow(QWidget):
             if hasattr(self, "slope_live_label"):
                 self.slope_live_label.setText("기울기 후보: 읽기 실패")
 
+    def on_spin_curve_live_auto_changed(self):
+        self.ensure_live_timers()
+        if hasattr(self, "spin_curve_live_auto_check") and not self.spin_curve_live_auto_check.isChecked():
+            self.last_spin_curve_live_value = None
+            if hasattr(self, "spin_curve_live_label"):
+                self.spin_curve_live_label.setText("스핀/커브: -")
+
+    def resolve_spin_curve_live_json_path(self):
+        manual = ""
+        if hasattr(self, "spin_curve_live_path_edit"):
+            manual = self.spin_curve_live_path_edit.text().strip().strip('"')
+
+        if manual:
+            return manual
+
+        target_exe = self.target_exe_edit.text().strip() if hasattr(self, "target_exe_edit") else "ProjectG127.exe"
+        exe_path = self.find_process_exe_path(target_exe or "ProjectG127.exe")
+        if exe_path:
+            return os.path.join(os.path.dirname(exe_path), "logs", "pangya_spin_curve_live.json")
+
+        return self.find_existing_live_json_path("pangya_spin_curve_live.json")
+
+    def update_spin_curve_live_from_file(self):
+        """pangya_spin_curve_live_logger.dll live JSON에서 spin/curve 값을 읽어 입력칸에 반영한다."""
+        if not hasattr(self, "spin_curve_live_auto_check") or not self.spin_curve_live_auto_check.isChecked():
+            return
+
+        path = self.resolve_spin_curve_live_json_path()
+        self.last_spin_curve_live_path = path
+
+        try:
+            if not os.path.exists(path):
+                if hasattr(self, "spin_curve_live_label"):
+                    self.spin_curve_live_label.setText("스핀/커브: live 파일 없음")
+                return
+
+            data = self.read_json_file_retry(path)
+
+            if not data.get("ok", False):
+                if hasattr(self, "spin_curve_live_label"):
+                    self.spin_curve_live_label.setText("스핀/커브: live 값 없음")
+                return
+
+            curve_ok = bool(data.get("curve_ok", data.get("ok", False)))
+            spin_ok = bool(data.get("spin_ok", data.get("ok", False)))
+
+            curve = float(data.get("curve")) if curve_ok and data.get("curve") is not None else None
+            spin = float(data.get("spin")) if spin_ok and data.get("spin") is not None else None
+            curve_max = float(data.get("curve_max", 0.0) or 0.0)
+            spin_max = float(data.get("spin_max", 0.0) or 0.0)
+            tick = data.get("tick")
+            seq = data.get("seq")
+
+            if curve is None and spin is None:
+                if hasattr(self, "spin_curve_live_label"):
+                    self.spin_curve_live_label.setText("스핀/커브: 값 없음")
+                return
+
+            # 비정상 base가 잡힌 경우 방어. 캐릭에 따라 max가 다를 수 있어 넉넉히 둔다.
+            if curve is not None and not -100.0 <= curve <= 100.0:
+                return
+            if spin is not None and not -100.0 <= spin <= 100.0:
+                return
+
+            changed = False
+            curve_text = None
+            spin_text = None
+
+            if curve is not None:
+                curve_text = f"{curve:.0f}" if abs(curve - round(curve)) < 0.001 else f"{curve:.2f}"
+                if self.calc_curve_edit.text().strip() != curve_text:
+                    self.calc_curve_edit.setText(curve_text)
+                    changed = True
+
+            if spin is not None:
+                spin_text = f"{spin:.0f}" if abs(spin - round(spin)) < 0.001 else f"{spin:.2f}"
+                if self.calc_spin_edit.text().strip() != spin_text:
+                    self.calc_spin_edit.setText(spin_text)
+                    changed = True
+
+            self.last_spin_curve_live_tick = tick
+            self.last_spin_curve_live_value = {
+                "curve": curve,
+                "spin": spin,
+                "curve_max": curve_max,
+                "spin_max": spin_max,
+                "seq": seq,
+                "tick": tick,
+            }
+
+            if hasattr(self, "spin_curve_live_label"):
+                c_show = "-" if curve is None else f"{curve:.2f}"
+                s_show = "-" if spin is None else f"{spin:.2f}"
+                self.spin_curve_live_label.setText(
+                    f"스핀/커브: S{s_show}/{spin_max:.0f} C{c_show}/{curve_max:.0f} seq={seq} tick={tick}"
+                )
+
+            if changed:
+                self.last_auto_result_signature = None
+
+        except Exception as e:
+            print(f"[WARN] 스핀/커브 live 값 읽기 실패: {e}")
+            if hasattr(self, "spin_curve_live_label"):
+                self.spin_curve_live_label.setText("스핀/커브: 읽기 실패")
+
     def stop_memory_probe(self):
         # 거리/고저 live JSON timer만 중지한다.
         # wind/slope live JSON timer는 각 체크박스와 watchdog이 별도로 관리한다.
@@ -2954,6 +3120,7 @@ class PangyaControlWindow(QWidget):
             f"스마트: {display.get('smart_cells_signed', display.get('smart_cells', 0.0)):+.2f}칸",
             f"PB: {result.pb:+.2f} / Real: {result.real_pb:.2f}",
             f"ground : {self.calc_ground_edit.text()}",
+            f"spin/curve : S{self.calc_spin_edit.text()} / C{self.calc_curve_edit.text()}",
             f"D{self.calc_distance_edit.text()} H{self.calc_height_edit.text()} W{self.calc_wind_edit.text()} A{self.calc_degree_edit.text()}",
         ]
 
@@ -3128,6 +3295,8 @@ class PangyaControlWindow(QWidget):
             self.last_ground_live_tick if hasattr(self, "last_ground_live_tick") else None,
             self.club_live_auto_check.isChecked() if hasattr(self, "club_live_auto_check") else False,
             self.last_club_live_tick if hasattr(self, "last_club_live_tick") else None,
+            self.spin_curve_live_auto_check.isChecked() if hasattr(self, "spin_curve_live_auto_check") else False,
+            self.last_spin_curve_live_tick if hasattr(self, "last_spin_curve_live_tick") else None,
         ]
 
         candidates = self.last_slope_live_candidates or {}
@@ -3175,6 +3344,11 @@ class PangyaControlWindow(QWidget):
                     self.update_slope_live_from_file()
                 except Exception:
                     pass
+            if hasattr(self, "spin_curve_live_auto_check") and self.spin_curve_live_auto_check.isChecked():
+                try:
+                    self.update_spin_curve_live_from_file()
+                except Exception:
+                    pass
 
             signature = self.make_auto_result_signature()
             if signature == self.last_auto_result_signature:
@@ -3214,6 +3388,7 @@ class PangyaControlWindow(QWidget):
                     f"{shot_name}  D{self.calc_distance_edit.text()} H{self.calc_height_edit.text()} W{self.calc_wind_edit.text()} A{self.calc_degree_edit.text()}",
                     f"club : {self.calc_club_combo.currentText()}",
                     f"ground : {self.calc_ground_edit.text()}",
+                    f"spin/curve : S{self.calc_spin_edit.text()} / C{self.calc_curve_edit.text()}",
                     f"기본(기울기0): {base_result.power_percent:.1f}% / {base_result.shot_yards:.1f}y / {base_display['board_cells_signed']:+.3f}칸 / PB{base_result.pb:+.2f}",
                 ]
 
