@@ -145,6 +145,7 @@ BASE_H = 1152
 
 DEBUG_LOG_INTERVAL_SEC = 2.0
 TRACK_INTERVAL_MS = 50
+LOCK_AUTO_UNLOCK_DISTANCE_DELTA = 0.50
 FORCED_CLIENT_LOG_DIR = r"C:\Pangya_US8JP\RELEASE SRV4\@Client EXE\logs"
 
 WIND_ANGLE_STEP = 5
@@ -1574,6 +1575,54 @@ class PangyaQuickControlOverlay(QWidget):
             return cw.calc_power_shot_combo.currentData()
         return None
 
+    def current_lock_enabled(self):
+        cw = self.control_window
+        return bool(getattr(cw, "calc_lock_enabled", False))
+
+    def _draw_lock_button(self, painter, y, row_h, gap_y):
+        scale = max(0.85, min(self.width() / 520.0, 1.6))
+        locked = self.current_lock_enabled()
+        text = "LOCKED" if locked else "LOCK"
+
+        font = QFont("Malgun Gothic")
+        font.setPixelSize(max(13, int(15 * scale)))
+        font.setBold(True)
+        painter.setFont(font)
+        fm = painter.fontMetrics()
+
+        w = max(int(82 * scale), fm.horizontalAdvance(text) + int(22 * scale))
+        h = row_h * 2 + gap_y
+        x = max(int(8 * scale), self.width() - w - int(8 * scale))
+
+        is_hover = self.hover_item == ("lock", "TOGGLE")
+
+        if locked:
+            bg = QColor(255, 215, 35, 235)
+            fg = QColor(20, 20, 20, 255)
+            border = QColor(255, 250, 150, 255)
+        elif is_hover:
+            bg = QColor(255, 255, 255, 105)
+            fg = QColor(255, 255, 255, 255)
+            border = QColor(255, 255, 255, 180)
+        else:
+            bg = QColor(0, 0, 0, 135)
+            fg = QColor(245, 245, 245, 240)
+            border = QColor(255, 255, 255, 125)
+
+        painter.setPen(QPen(border, 1))
+        painter.setBrush(bg)
+        painter.drawRoundedRect(x, y, w, h, 6, 6)
+
+        tx = x + max(8, (w - fm.horizontalAdvance(text)) // 2)
+        ty = y + (h + fm.ascent() - fm.descent()) // 2
+
+        painter.setPen(QPen(QColor(0, 0, 0, 190), 1))
+        painter.drawText(tx + 1, ty + 1, text)
+        painter.setPen(QPen(fg, 1))
+        painter.drawText(tx, ty, text)
+
+        self.hit_items.append((x, y, w, h, "lock", "TOGGLE"))
+
     def _draw_button_row(self, painter, label, items, selected_value, y, row_kind):
         self.hit_items = [item for item in self.hit_items if item[4] != row_kind]
 
@@ -1658,6 +1707,7 @@ class PangyaQuickControlOverlay(QWidget):
             top + row_h + gap_y,
             "power_shot",
         )
+        self._draw_lock_button(painter, top, row_h, gap_y)
 
     def _hit_test(self, pos):
         px = pos.x()
@@ -1693,6 +1743,8 @@ class PangyaQuickControlOverlay(QWidget):
             self.control_window.select_quick_shot(value)
         elif kind == "power_shot":
             self.control_window.select_quick_power_shot(value)
+        elif kind == "lock":
+            self.control_window.toggle_calc_lock()
         self.update()
 
 # =========================================================
@@ -1774,6 +1826,13 @@ class PangyaControlWindow(QWidget):
         self.last_overlay_diff_targets = []
         self.last_diff_overlay_signature = None
 
+        # LOCK은 계산 결과/DIFF target을 현재 시점에 고정한다.
+        # 조준 중 캐릭터 방향 회전으로 wind degree/slope live 값이 변해도 자동 재계산하지 않고,
+        # DIFF만 lock 시점의 장판 기준으로 계속 갱신한다.
+        self.calc_lock_enabled = False
+        self.calc_lock_snapshot = None
+        self.calc_lock_distance = None
+
         # live JSON 읽기 캐시: 같은 파일/mtime/size이면 json.load를 반복하지 않는다.
         self._live_json_cache = {}
         # live JSON 경로 캐시: 매 tick마다 ProjectG127.exe 경로/후보 경로를 다시 찾지 않는다.
@@ -1827,6 +1886,102 @@ class PangyaControlWindow(QWidget):
             self.refresh_auto_result_overlay()
 
         QTimer.singleShot(delay_ms, _run)
+
+    def get_current_distance_float_for_lock(self):
+        """LOCK 자동 해제 기준으로 쓸 현재 남은거리 값을 얻는다."""
+        try:
+            if self.last_memory_distance is not None:
+                return float(self.last_memory_distance)
+        except Exception:
+            pass
+
+        try:
+            if hasattr(self, "calc_distance_edit"):
+                text = self.calc_distance_edit.text().strip()
+                if text:
+                    return float(text)
+        except Exception:
+            pass
+
+        return None
+
+    def lock_current_calc_result(self):
+        """현재 계산 결과와 DIFF target을 고정한다."""
+        if calc_shot is None:
+            return
+
+        # lock을 걸기 직전에 한 번 최신 값으로 계산해서 기준 target을 확정한다.
+        was_locked = bool(getattr(self, "calc_lock_enabled", False))
+        self.calc_lock_enabled = False
+        self.last_auto_result_signature = None
+        self.refresh_auto_result_overlay()
+
+        base_lines = list(self.last_overlay_base_lines_no_diff or [])
+        diff_targets = [dict(t) for t in (self.last_overlay_diff_targets or [])]
+
+        self.calc_lock_enabled = True
+        self.calc_lock_distance = self.get_current_distance_float_for_lock()
+        self.calc_lock_snapshot = {
+            "base_lines": base_lines,
+            "diff_targets": diff_targets,
+            "distance": self.calc_lock_distance,
+            "created_at": time.time(),
+        }
+        self.last_diff_overlay_signature = None
+
+        # memory_auto가 꺼져 있어도 lock 자동 해제를 위해 거리 live timer는 켜둔다.
+        if hasattr(self, "memory_timer") and not self.memory_timer.isActive():
+            self.memory_timer.start(300)
+
+        self.refresh_diff_overlay_only()
+        if hasattr(self, "quick_overlay"):
+            self.quick_overlay.update()
+
+    def unlock_calc_result(self, reason=None, refresh=True):
+        """LOCK을 해제하고 실시간 자동 계산을 다시 허용한다."""
+        if not bool(getattr(self, "calc_lock_enabled", False)):
+            return
+
+        self.calc_lock_enabled = False
+        self.calc_lock_snapshot = None
+        self.calc_lock_distance = None
+        self.last_auto_result_signature = None
+        self.last_diff_overlay_signature = None
+
+        #if reason:
+            #print(f"[INFO] 계산 LOCK 해제: {reason}")
+
+        if hasattr(self, "quick_overlay"):
+            self.quick_overlay.update()
+
+        if refresh:
+            self.schedule_auto_result_refresh(20)
+
+    def toggle_calc_lock(self):
+        """좌상단 LOCK 버튼 토글."""
+        if bool(getattr(self, "calc_lock_enabled", False)):
+            self.unlock_calc_result("manual", refresh=True)
+        else:
+            self.lock_current_calc_result()
+
+    def maybe_unlock_calc_lock_by_distance(self, current_distance):
+        """샷 이후 남은거리가 바뀌면 LOCK을 자동으로 해제한다."""
+        if not bool(getattr(self, "calc_lock_enabled", False)):
+            return
+
+        try:
+            ref_distance = self.calc_lock_distance
+            if ref_distance is None:
+                snapshot = self.calc_lock_snapshot or {}
+                ref_distance = snapshot.get("distance")
+            if ref_distance is None:
+                return
+
+            delta = abs(float(current_distance) - float(ref_distance))
+            if delta >= LOCK_AUTO_UNLOCK_DISTANCE_DELTA:
+                self.unlock_calc_result(f"distance changed {float(ref_distance):.2f} -> {float(current_distance):.2f}", refresh=True)
+        except Exception as e:
+            print(f"[WARN] LOCK 거리 변화 감지 실패: {e}")
 
     def select_quick_shot(self, shot_value):
         """좌상단 퀵 오버레이에서 Shot을 클릭했을 때 계산기 콤보와 결과를 동기화한다."""
@@ -2812,6 +2967,16 @@ class PangyaControlWindow(QWidget):
                         timer.stop()
 
             keep_timer("memory_auto_check", "memory_timer", self.update_memory_values_from_game, 300)
+            # LOCK 자동 해제는 남은거리 변화로 판단하므로, 거리 자동 입력 체크가 꺼져 있어도
+            # LOCK 중에는 거리 live timer만 유지한다. 입력칸 반영은 기존 체크박스 조건을 그대로 따른다.
+            if bool(getattr(self, "calc_lock_enabled", False)) and hasattr(self, "memory_timer"):
+                if not self.memory_timer.isActive():
+                    self.memory_timer.start(300)
+                    try:
+                        self.update_memory_values_from_game()
+                    except Exception:
+                        pass
+
             keep_timer("ground_live_auto_check", "ground_live_timer", self.update_ground_live_from_file, 300)
             keep_timer("club_live_auto_check", "club_live_timer", self.update_club_live_from_file, 500)
             keep_timer("wind_live_auto_check", "wind_live_timer", self.update_wind_live_from_file, 300)
@@ -3677,6 +3842,27 @@ class PangyaControlWindow(QWidget):
         """
         lines = list(base_lines or [])
 
+        if bool(getattr(self, "calc_lock_enabled", False)):
+            lock_distance = self.calc_lock_distance
+            try:
+                snapshot = self.calc_lock_snapshot or {}
+                if lock_distance is None:
+                    lock_distance = snapshot.get("distance")
+            except Exception:
+                pass
+
+            lock_text = "LOCK: ON"
+            try:
+                if lock_distance is not None:
+                    lock_text += f" D{float(lock_distance):.2f}"
+            except Exception:
+                pass
+
+            if lines:
+                lines.insert(1, lock_text)
+            else:
+                lines.append(lock_text)
+
         if not hasattr(self, "diff_live_auto_check") or not self.diff_live_auto_check.isChecked():
             return lines
 
@@ -3706,7 +3892,7 @@ class PangyaControlWindow(QWidget):
         # 기본(기울기0) DIFF는 숨기고, 기울기/수동 target만 표시한다.
         if len(targets) > 1:
             targets = [t for t in targets if str(t.get("name", "")) != "기본"]
-
+            
         if not targets:
             lines.append("DIFF: 계산 대기")
             return lines
@@ -3735,13 +3921,19 @@ class PangyaControlWindow(QWidget):
 
     def refresh_diff_overlay_only(self):
         """DIFF/LINE만 바뀐 경우 계산 물리를 다시 돌리지 않고 오버레이 문자열만 갱신한다."""
-        base_lines = self.last_overlay_base_lines_no_diff
+        if bool(getattr(self, "calc_lock_enabled", False)) and self.calc_lock_snapshot is not None:
+            base_lines = self.calc_lock_snapshot.get("base_lines")
+            diff_targets = self.calc_lock_snapshot.get("diff_targets")
+        else:
+            base_lines = self.last_overlay_base_lines_no_diff
+            diff_targets = self.last_overlay_diff_targets
+
         if base_lines is None:
             # 아직 자동 계산 결과가 없으면 한 번만 계산 결과를 만들도록 요청한다.
             self.last_auto_result_signature = None
             return
 
-        final_lines = self.build_diff_overlay_lines(base_lines, self.last_overlay_diff_targets)
+        final_lines = self.build_diff_overlay_lines(base_lines, diff_targets)
 
         signature = tuple(final_lines)
         if signature == self.last_diff_overlay_signature:
@@ -3770,7 +3962,9 @@ class PangyaControlWindow(QWidget):
 
     def update_memory_values_from_game(self):
         """pangya_distance_height_logger.dll live JSON에서 distance/height를 읽어 계산기 입력칸에 반영한다."""
-        if hasattr(self, "memory_auto_check") and not self.memory_auto_check.isChecked() and self.memory_probe is None:
+        memory_auto_enabled = bool(hasattr(self, "memory_auto_check") and self.memory_auto_check.isChecked())
+        lock_tracking_enabled = bool(getattr(self, "calc_lock_enabled", False))
+        if not memory_auto_enabled and not lock_tracking_enabled and self.memory_probe is None:
             return
 
         path = self.resolve_distance_height_live_json_path()
@@ -3802,11 +3996,14 @@ class PangyaControlWindow(QWidget):
                     self.last_memory_distance = distance
                     if hasattr(self, "memory_distance_label"):
                         self.memory_distance_label.setText(f"거리: {distance:.2f}y")
-                    if hasattr(self, "memory_auto_check") and self.memory_auto_check.isChecked():
+                    # LOCK 중에도 distance는 읽지만, 입력칸 자동 반영은 기존 체크박스 조건을 유지한다.
+                    if memory_auto_enabled:
                         new_text = f"{distance:.2f}"
                         if self.calc_distance_edit.text().strip() != new_text:
                             self.calc_distance_edit.setText(new_text)
                             changed = True
+
+                    self.maybe_unlock_calc_lock_by_distance(distance)
 
             if height is not None:
                 if not -500.0 <= height <= 500.0:
@@ -3815,7 +4012,7 @@ class PangyaControlWindow(QWidget):
                     self.last_memory_height = height
                     if hasattr(self, "memory_height_label"):
                         self.memory_height_label.setText(f"고저: {height:.2f}m")
-                    if hasattr(self, "memory_auto_check") and self.memory_auto_check.isChecked():
+                    if memory_auto_enabled:
                         new_text = f"{height:.2f}"
                         if self.calc_height_edit.text().strip() != new_text:
                             self.calc_height_edit.setText(new_text)
@@ -4103,6 +4300,12 @@ class PangyaControlWindow(QWidget):
             if self.overlay.calc_state is not None:
                 self.overlay.set_calc_state(None)
             self.last_auto_result_signature = None
+            return
+
+        # LOCK 중에는 wind degree/slope/거리 입력칸이 live로 변해도 계산 target을 다시 만들지 않는다.
+        # DIFF/LINE만 현재 조준선 기준으로 갱신한다.
+        if bool(getattr(self, "calc_lock_enabled", False)):
+            self.refresh_diff_overlay_only()
             return
 
         try:
